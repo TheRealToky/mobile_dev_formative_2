@@ -18,8 +18,8 @@ student commits at each checkpoint.
 | Step | Description | Status |
 |---|---|---|
 | 0 | Architecture review + `DESIGN_NOTES.md` | Done, committed |
-| 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Done, awaiting commit |
-| 2 | Models, validators, constants + unit tests | Not started |
+| 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Done, committed |
+| 2 | Models, validators, constants + unit tests | Done, awaiting commit |
 | 3 | Auth repository, providers, auth screens, router guards | Not started |
 | 4 | Rules, users collection, `isStaffProvider` | Not started |
 | 5 | Incident repository, streams, feed, reusable widgets | Not started |
@@ -29,7 +29,31 @@ student commits at each checkpoint.
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 0 (`60e7060`).
+Last checkpoint confirmed committed: step 1.
+
+## Step 2 details
+
+- `lib/core/constants.dart`: `allowedEmailDomains`, `campusBuildings`
+  (placeholder ALU Kigali names, edit freely), `Limits`, `Paths`.
+- Models in `lib/data/models/`: `Incident` + `IncidentLocation`,
+  `IncidentCategory`, `IncidentStatus`, `AppUser` + `UserRole`, `StatusEvent`.
+  `toMap()` never includes timestamps; repositories add server timestamps.
+  `fromMap()` tolerates pending server timestamps (`null`) and bad data.
+- Status lifecycle lives in one place: `IncidentStatus.allowedNext` /
+  `canMoveTo()` (unit tested).
+- Validators in `lib/core/validators.dart`; client-side search in
+  `lib/core/utils/incident_search.dart` (all words must match).
+- 29 tests passing.
+
+### Differences from the report to fix later (also goes in REPORT_ASSETS.md)
+
+- **Added `reporterName` to `incidents/{id}`.** It is copied at submission so
+  the feed can show names without reading other users' profiles, and it is
+  written as `null` for anonymous reports. This lets the rules restrict
+  `users/{uid}` reads to the owner and staff, so anonymity is enforced by data,
+  not only hidden in the UI (the opaque `reporterId` is still readable).
+- Timeline: the first "Submitted" entry is drawn from `createdAt`; history
+  documents exist only for staff changes (rules only let staff create them).
 
 ## Step 1 details
 
