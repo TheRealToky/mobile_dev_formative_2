@@ -12,6 +12,7 @@ abstract interface class PhotoSource {
   Future<String?> pick({required bool fromCamera});
 }
 
+/// [PhotoSource] backed by the `image_picker` plugin.
 class ImagePickerPhotoSource implements PhotoSource {
   ImagePickerPhotoSource([ImagePicker? picker])
     : _picker = picker ?? ImagePicker();

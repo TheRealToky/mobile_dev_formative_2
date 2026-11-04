@@ -16,6 +16,7 @@ class SearchQuery extends Notifier<String> {
   void clear() => state = '';
 }
 
+/// Free-text search typed in the feed.
 final searchQueryProvider = NotifierProvider<SearchQuery, String>(
   SearchQuery.new,
 );
@@ -31,6 +32,7 @@ class CategoryFilter extends Notifier<IncidentCategory?> {
   void clear() => state = null;
 }
 
+/// Selected category chip in the feed, or `null` for all.
 final categoryFilterProvider =
     NotifierProvider<CategoryFilter, IncidentCategory?>(CategoryFilter.new);
 
@@ -43,6 +45,7 @@ class StatusFilter extends Notifier<IncidentStatus?> {
   void clear() => state = null;
 }
 
+/// Selected status chip in the feed, or `null` for all.
 final statusFilterProvider = NotifierProvider<StatusFilter, IncidentStatus?>(
   StatusFilter.new,
 );

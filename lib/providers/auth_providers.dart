@@ -13,6 +13,7 @@ final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => FirebaseAuthRepository(ref.watch(firebaseAuthProvider)),
 );
 
+/// Reads and creates `users/{uid}` profile documents.
 final userRepositoryProvider = Provider<UserRepository>(
   (ref) => FirestoreUserRepository(ref.watch(firestoreProvider)),
 );
@@ -79,6 +80,7 @@ class SessionLoading extends SessionState {
   const SessionLoading();
 }
 
+/// No user is signed in.
 class SessionSignedOut extends SessionState {
   const SessionSignedOut();
 }
@@ -171,6 +173,7 @@ class AuthController extends AsyncNotifier<void> {
   }
 }
 
+/// Sign in, register, verify, reset password and sign out.
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(
   AuthController.new,
 );

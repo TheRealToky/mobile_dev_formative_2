@@ -26,6 +26,7 @@ import 'widgets/photo_gallery.dart';
 /// fail).
 typedef DetailPermissions = ({bool canEdit, bool canDelete});
 
+/// Which actions [uid] may take on [incident]; pure, so it is unit tested.
 DetailPermissions permissionsFor(
   Incident incident, {
   required String? uid,

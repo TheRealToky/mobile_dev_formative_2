@@ -152,131 +152,138 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
               key: _formKey,
               child: AbsorbPointer(
                 absorbing: busy,
-                child: ListView(
+                // Not a lazy ListView: every field must stay mounted, or a
+                // field scrolled off-screen loses its state and is skipped
+                // by validate() (found by the integration test).
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(
                     Gap.lg,
                     0,
                     Gap.lg,
                     Gap.xxl,
                   ),
-                  children: [
-                    section('What kind of issue?'),
-                    FormField<IncidentCategory>(
-                      key: _categoryKey,
-                      initialValue: _initialDraft?.category,
-                      validator: (v) => v == null ? 'Choose a category.' : null,
-                      builder: (field) => _WithError(
-                        field: field,
-                        child: CategoryPicker(
-                          selected: field.value,
-                          onSelected: field.didChange,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      section('What kind of issue?'),
+                      FormField<IncidentCategory>(
+                        key: _categoryKey,
+                        initialValue: _initialDraft?.category,
+                        validator: (v) =>
+                            v == null ? 'Choose a category.' : null,
+                        builder: (field) => _WithError(
+                          field: field,
+                          child: CategoryPicker(
+                            selected: field.value,
+                            onSelected: field.didChange,
+                          ),
                         ),
                       ),
-                    ),
-                    section('Details'),
-                    TextFormField(
-                      controller: _title,
-                      maxLength: Limits.titleMax,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: TextInputAction.next,
-                      autovalidateMode: AutovalidateMode.onUnfocus,
-                      validator: Validators.title,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        hintText: 'For example: Leaking tap in the library',
-                      ),
-                    ),
-                    const SizedBox(height: Gap.sm),
-                    TextFormField(
-                      controller: _description,
-                      minLines: 3,
-                      maxLines: 8,
-                      maxLength: Limits.descriptionMax,
-                      textCapitalization: TextCapitalization.sentences,
-                      autovalidateMode: AutovalidateMode.onUnfocus,
-                      validator: Validators.description,
-                      decoration: const InputDecoration(
-                        labelText: 'What happened?',
-                        hintText: 'What is wrong, since when, how serious',
-                        alignLabelWithHint: true,
-                      ),
-                    ),
-                    section('Where?'),
-                    DropdownButtonFormField<String>(
-                      key: _buildingKey,
-                      initialValue: _initialDraft?.building,
-                      isExpanded: true,
-                      validator: Validators.building,
-                      decoration: const InputDecoration(
-                        labelText: 'Building',
-                        prefixIcon: Icon(Icons.apartment),
-                      ),
-                      items: [
-                        for (final b in {
-                          ...campusBuildings,
-                          // Keep an edited report's building even if the
-                          // list has since changed.
-                          ?_initialDraft?.building,
-                        })
-                          DropdownMenuItem(value: b, child: Text(b)),
-                      ],
-                      onChanged: (_) {},
-                    ),
-                    const SizedBox(height: Gap.md),
-                    TextFormField(
-                      controller: _detail,
-                      maxLength: Limits.locationDetailMax,
-                      autovalidateMode: AutovalidateMode.onUnfocus,
-                      validator: Validators.locationDetail,
-                      decoration: const InputDecoration(
-                        labelText: 'Where exactly? (optional)',
-                        hintText: 'Floor, room, near the main entrance...',
-                      ),
-                    ),
-                    section(
-                      'Photos (optional)',
-                      hint:
-                          'Up to ${Limits.maxPhotos}. Location data is '
-                          'removed before upload.',
-                    ),
-                    FormField<List<DraftPhoto>>(
-                      key: _photosKey,
-                      initialValue: _initialDraft?.photos ?? const [],
-                      builder: (field) => PhotoPicker(
-                        photos: field.value ?? const [],
-                        enabled: !busy,
-                        onAdd: ({required fromCamera}) =>
-                            _addPhoto(field, fromCamera: fromCamera),
-                        onRemove: (i) =>
-                            field.didChange([...?field.value]..removeAt(i)),
-                      ),
-                    ),
-                    const SizedBox(height: Gap.lg),
-                    FormField<bool>(
-                      key: _anonymousKey,
-                      initialValue: _initialDraft?.isAnonymous ?? false,
-                      builder: (field) => SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        value: field.value ?? false,
-                        onChanged: field.didChange,
-                        title: const Text('Hide my name from other students'),
-                        subtitle: const Text(
-                          'Staff can still see who reported it, so they can '
-                          'follow up.',
+                      section('Details'),
+                      TextFormField(
+                        controller: _title,
+                        maxLength: Limits.titleMax,
+                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.next,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        validator: Validators.title,
+                        decoration: const InputDecoration(
+                          labelText: 'Title',
+                          hintText: 'For example: Leaking tap in the library',
                         ),
                       ),
-                    ),
-                    const SizedBox(height: Gap.xl),
-                    if (busy) ...[
-                      _SubmitProgress(progress: submission.progress),
+                      const SizedBox(height: Gap.sm),
+                      TextFormField(
+                        controller: _description,
+                        minLines: 3,
+                        maxLines: 8,
+                        maxLength: Limits.descriptionMax,
+                        textCapitalization: TextCapitalization.sentences,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        validator: Validators.description,
+                        decoration: const InputDecoration(
+                          labelText: 'What happened?',
+                          hintText: 'What is wrong, since when, how serious',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                      section('Where?'),
+                      DropdownButtonFormField<String>(
+                        key: _buildingKey,
+                        initialValue: _initialDraft?.building,
+                        isExpanded: true,
+                        validator: Validators.building,
+                        decoration: const InputDecoration(
+                          labelText: 'Building',
+                          prefixIcon: Icon(Icons.apartment),
+                        ),
+                        items: [
+                          for (final b in {
+                            ...campusBuildings,
+                            // Keep an edited report's building even if the
+                            // list has since changed.
+                            ?_initialDraft?.building,
+                          })
+                            DropdownMenuItem(value: b, child: Text(b)),
+                        ],
+                        onChanged: (_) {},
+                      ),
                       const SizedBox(height: Gap.md),
+                      TextFormField(
+                        controller: _detail,
+                        maxLength: Limits.locationDetailMax,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        validator: Validators.locationDetail,
+                        decoration: const InputDecoration(
+                          labelText: 'Where exactly? (optional)',
+                          hintText: 'Floor, room, near the main entrance...',
+                        ),
+                      ),
+                      section(
+                        'Photos (optional)',
+                        hint:
+                            'Up to ${Limits.maxPhotos}. Location data is '
+                            'removed before upload.',
+                      ),
+                      FormField<List<DraftPhoto>>(
+                        key: _photosKey,
+                        initialValue: _initialDraft?.photos ?? const [],
+                        builder: (field) => PhotoPicker(
+                          photos: field.value ?? const [],
+                          enabled: !busy,
+                          onAdd: ({required fromCamera}) =>
+                              _addPhoto(field, fromCamera: fromCamera),
+                          onRemove: (i) =>
+                              field.didChange([...?field.value]..removeAt(i)),
+                        ),
+                      ),
+                      const SizedBox(height: Gap.lg),
+                      FormField<bool>(
+                        key: _anonymousKey,
+                        initialValue: _initialDraft?.isAnonymous ?? false,
+                        builder: (field) => SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: field.value ?? false,
+                          onChanged: field.didChange,
+                          title: const Text('Hide my name from other students'),
+                          subtitle: const Text(
+                            'Staff can still see who reported it, so they can '
+                            'follow up.',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: Gap.xl),
+                      if (busy) ...[
+                        _SubmitProgress(progress: submission.progress),
+                        const SizedBox(height: Gap.md),
+                      ],
+                      LoadingButton(
+                        label: _isEdit ? 'Save changes' : 'Submit report',
+                        isLoading: busy,
+                        onPressed: _submit,
+                      ),
                     ],
-                    LoadingButton(
-                      label: _isEdit ? 'Save changes' : 'Submit report',
-                      isLoading: busy,
-                      onPressed: _submit,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

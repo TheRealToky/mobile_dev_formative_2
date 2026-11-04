@@ -17,7 +17,10 @@ import 'status_chip.dart';
 // The wrappers apply the app theme directly because the Preview `theme`
 // API is marked unstable in this Flutter version.
 
+/// Preview wrapper applying the light app theme.
 Widget lightTheme(Widget child) => _themed(AppTheme.light(), child);
+
+/// Preview wrapper applying the dark app theme.
 Widget darkTheme(Widget child) => _themed(AppTheme.dark(), child);
 
 Widget _themed(ThemeData theme, Widget child) => Theme(
@@ -43,6 +46,7 @@ final _sample = Incident(
   updatedAt: DateTime(2026, 11, 4, 10),
 );
 
+/// Incident cards in several statuses.
 @Preview(group: 'Incident card', name: 'Light', wrapper: lightTheme)
 @Preview(group: 'Incident card', name: 'Dark', wrapper: darkTheme)
 Widget incidentCardPreview() => Column(
@@ -63,6 +67,7 @@ Widget incidentCardPreview() => Column(
   ],
 );
 
+/// Every status chip and lifecycle rail.
 @Preview(group: 'Status', name: 'Chips and rails, light', wrapper: lightTheme)
 @Preview(group: 'Status', name: 'Chips and rails, dark', wrapper: darkTheme)
 Widget statusPreview() => Column(
@@ -82,10 +87,12 @@ Widget statusPreview() => Column(
   ],
 );
 
+/// The category picker.
 @Preview(group: 'Category picker', name: 'Wrapped', wrapper: lightTheme)
 Widget categoryPickerPreview() =>
     CategoryPicker(selected: IncidentCategory.electricity, onSelected: (_) {});
 
+/// An empty state with an action.
 @Preview(group: 'States', name: 'Empty', wrapper: lightTheme)
 Widget emptyStatePreview() => EmptyState(
   icon: Icons.search_off,
@@ -94,6 +101,7 @@ Widget emptyStatePreview() => EmptyState(
   onAction: () {},
 );
 
+/// An error view with retry.
 @Preview(group: 'States', name: 'Error', wrapper: darkTheme)
 Widget errorViewPreview() =>
     ErrorView(error: Exception('offline'), onRetry: () {});

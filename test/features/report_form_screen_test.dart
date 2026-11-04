@@ -4,12 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_dev_formative_2/app/theme.dart';
 import 'package:mobile_dev_formative_2/data/models/incident.dart';
 import 'package:mobile_dev_formative_2/features/incidents/report_form_screen.dart';
+import 'package:mobile_dev_formative_2/widgets/category_picker.dart';
 import 'package:mobile_dev_formative_2/widgets/photo_picker.dart';
 
 import '../helpers/builders.dart';
 
-Future<void> _pump(WidgetTester tester, {Incident? initial}) async {
-  await tester.binding.setSurfaceSize(const Size(400, 2000));
+Future<void> _pump(
+  WidgetTester tester, {
+  Incident? initial,
+  Size size = const Size(400, 2000),
+}) async {
+  await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
@@ -66,5 +71,35 @@ void main() {
     expect(picker.photos, hasLength(1));
     final toggle = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
     expect(toggle.value, isTrue);
+  });
+
+  // Regression: the form used to be a lazy ListView, so on a phone the
+  // category picker was disposed when scrolled away and Submit crashed.
+  testWidgets('fields keep their values when scrolled off a small screen', (
+    tester,
+  ) async {
+    await _pump(tester, size: const Size(360, 640));
+    await tester.tap(find.text('Water'));
+    await tester.pump();
+
+    final submit = find.text('Submit report');
+    await tester.scrollUntilVisible(
+      submit,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.scrollUntilVisible(
+      find.byType(CategoryPicker),
+      -300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final picker = tester.widget<CategoryPicker>(find.byType(CategoryPicker));
+    expect(picker.selected, IncidentCategory.water);
+    expect(find.text('Choose a category.'), findsNothing);
+    expect(find.text('Choose a building.'), findsOneWidget);
   });
 }

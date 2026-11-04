@@ -12,6 +12,7 @@ class ThemeModeController extends Notifier<ThemeMode> {
   void set(ThemeMode mode) => state = mode;
 }
 
+/// Theme mode chosen on the Profile screen.
 final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
   ThemeModeController.new,
 );

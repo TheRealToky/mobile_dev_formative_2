@@ -9,6 +9,7 @@ import 'auth_providers.dart';
 import 'filter_providers.dart';
 import 'firebase_providers.dart';
 
+/// The only gateway to the `incidents` collection.
 final incidentRepositoryProvider = Provider<IncidentRepository>(
   (ref) => FirestoreIncidentRepository(ref.watch(firestoreProvider)),
 );

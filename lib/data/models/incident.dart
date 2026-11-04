@@ -20,7 +20,7 @@ class IncidentLocation {
   String get display => detail.isEmpty ? building : '$building, $detail';
 
   factory IncidentLocation.fromMap(Object? map) => switch (map) {
-    Map m => IncidentLocation(
+    Map<Object?, Object?> m => IncidentLocation(
       building: stringFrom(m['building'], orElse: 'Unknown'),
       detail: stringFrom(m['detail']),
     ),
@@ -88,7 +88,7 @@ class Incident {
       status: IncidentStatus.fromValue(map['status']),
       location: IncidentLocation.fromMap(map['location']),
       photoUrls: switch (map['photoUrls']) {
-        List list => list.whereType<String>().toList(growable: false),
+        List<Object?> list => list.whereType<String>().toList(growable: false),
         _ => const [],
       },
       reporterId: stringFrom(map['reporterId']),

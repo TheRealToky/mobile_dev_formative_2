@@ -26,10 +26,58 @@ student commits at each checkpoint.
 | 6 | Report form, photo upload, cleanup on failure | Done, committed |
 | 7 | Detail, edit/delete, status timeline | Done, committed |
 | 8 | Staff status update (batch), dashboard | Done, committed |
-| 9 | Profile, polish, states, dark mode | Done, awaiting commit |
-| 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
+| 9 | Profile, polish, states, dark mode | Done, committed |
+| 10 | Tests, rules tests, docs, README, demo script, report assets | Done, awaiting commit |
 
-Last checkpoint confirmed committed: step 8.
+Last checkpoint confirmed committed: step 9.
+
+## Step 10 details
+
+- **Integration test** (`integration_test/app_flow_test.dart`,
+  `test_driver/integration_test.dart`, dev dependency `integration_test`):
+  the real `CampusApp` (router, guards, screens, providers, repositories)
+  with only the Firebase SDKs swapped for `firebase_auth_mocks` and
+  `fake_cloud_firestore`. Flow 1: verified student lands on the feed,
+  profile doc created as student, no Dashboard tab, files a report, lands on
+  its detail, finds it by search. Flow 2: staff see the dashboard count,
+  open the report, move it to Under review with a note; status, history and
+  timeline update. No Android device was connected, so both flows were run
+  on the host (copied into `test/` temporarily) and pass; run them on a
+  phone with `flutter test integration_test/app_flow_test.dart`.
+  `enableFlutterDriverExtension()` was not added to `main.dart`: it is only
+  needed for the legacy flutter_driver API, not for `integration_test`.
+- **Bug found by the integration test:** the report form was a lazy
+  `ListView`, so on a phone the category picker was disposed when scrolled
+  off-screen and Submit crashed on `_categoryKey.currentState!` (and
+  `validate()` skipped unmounted fields). Now a `SingleChildScrollView` +
+  `Column`; regression test in `report_form_screen_test.dart` submits on a
+  360 x 640 screen. The old widget tests used a 2000 px tall surface, which
+  is why they missed it.
+- **Mocks:** `dart-generate-test-mocks` loaded. Kept **mocktail** instead of
+  mockito + build_runner: every test already uses it, it needs no generated
+  `.mocks.dart` files, and the skill's practices (constructor/provider
+  injection behind interfaces, `thenAnswer` for async, `verify` /
+  `captureAny`) are already followed.
+- **More tests:** `test/features/auth_screens_test.dart` (non-ALU email
+  rejected without calling Firebase, mismatched passwords, valid register,
+  wrong credentials message, empty login).
+- **Coverage:** 77.9 % of `lib/` lines (was 75.5 % before the auth tests).
+  Lowest: `storage_repository.dart`, `photo_services.dart` (plugin wrappers
+  needing a device), `edit_incident_screen.dart`, `photo_gallery.dart`.
+- **Static analysis:** `strict-casts`, `strict-inference`,
+  `strict-raw-types` enabled in `analysis_options.yaml` (2 raw types fixed
+  in `incident.dart`); `dart fix` had nothing to apply. A temporary
+  `public_member_api_docs` pass found 25 undocumented top-level
+  declarations (mostly providers and previews); all now have doc comments.
+  The lint is not left on: it would also demand docs on self-explanatory
+  fields and constructors (247 more).
+- **Docs:** `README.md` (overview, architecture, setup checklist, tests,
+  structure, config files, limitations), `TEST_MATRIX.md` (10 manual
+  scenarios, empty Pass/Fail column), `DEMO_SCRIPT.md` (10 scenes, seed
+  data), `REPORT_ASSETS.md` (changes to make in the report, evidence per
+  section, testing table, screenshots list).
+- Final state: 150 Flutter tests pass, 35 rules tests (unchanged since
+  step 4), `flutter analyze` clean.
 
 ## Step 9 details
 

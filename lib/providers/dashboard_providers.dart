@@ -42,6 +42,7 @@ final allIncidentsStreamProvider = StreamProvider.autoDispose<List<Incident>>((
   return ref.watch(incidentRepositoryProvider).watchIncidents();
 });
 
+/// Dashboard numbers and queue, derived live from [allIncidentsStreamProvider].
 final dashboardStatsProvider = Provider.autoDispose<AsyncValue<DashboardStats>>(
   (ref) => ref.watch(allIncidentsStreamProvider).whenData(DashboardStats.from),
 );
@@ -56,6 +57,7 @@ class DashboardQueueFilter extends Notifier<IncidentStatus?> {
   void toggle(IncidentStatus status) => state = state == status ? null : status;
 }
 
+/// The quick filter selected on the dashboard.
 final dashboardQueueFilterProvider =
     NotifierProvider<DashboardQueueFilter, IncidentStatus?>(
       DashboardQueueFilter.new,

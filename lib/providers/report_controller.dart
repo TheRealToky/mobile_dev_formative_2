@@ -12,14 +12,17 @@ import 'auth_providers.dart';
 import 'firebase_providers.dart';
 import 'incident_providers.dart';
 
+/// Uploads and deletes incident photos in Cloud Storage.
 final storageRepositoryProvider = Provider<StorageRepository>(
   (ref) => FirebaseStorageRepository(ref.watch(storageProvider)),
 );
 
+/// Picks photos from the camera or gallery.
 final photoSourceProvider = Provider<PhotoSource>(
   (ref) => ImagePickerPhotoSource(),
 );
 
+/// Resizes photos and strips EXIF (including GPS) before upload.
 final imageCompressorProvider = Provider<ImageCompressor>(
   (ref) => const FlutterImageCompressor(),
 );
@@ -208,6 +211,7 @@ class ReportController extends AsyncNotifier<void> {
   }
 }
 
+/// Submit, edit and delete reports, with upload progress.
 final reportControllerProvider = AsyncNotifierProvider<ReportController, void>(
   ReportController.new,
 );

@@ -28,6 +28,7 @@ extension IncidentStatusVisuals on IncidentStatus {
   }
 }
 
+/// Icon for each category (DESIGN_NOTES.md).
 extension IncidentCategoryVisuals on IncidentCategory {
   IconData get icon => switch (this) {
     IncidentCategory.water => Icons.water_drop_outlined,
