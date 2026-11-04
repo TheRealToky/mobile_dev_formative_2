@@ -12,6 +12,7 @@ import '../../data/models/status_event.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/incident_providers.dart';
 import '../../providers/report_controller.dart';
+import '../staff/status_update_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/incident_visuals.dart';
@@ -92,6 +93,36 @@ class IncidentDetailScreen extends ConsumerWidget {
           _ => const Center(child: CircularProgressIndicator()),
         },
       ),
+      // Staff action, kept in reach at the bottom while reading the report.
+      bottomNavigationBar: isStaff && incident != null && incident.status.isOpen
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Gap.lg,
+                  Gap.sm,
+                  Gap.lg,
+                  Gap.md,
+                ),
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.swap_horiz),
+                  label: const Text('Update status'),
+                  onPressed: () => _updateStatus(context, incident),
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Future<void> _updateStatus(BuildContext context, Incident incident) async {
+    final result = await showStatusUpdateSheet(context, incident);
+    if (result == null || !context.mounted) return;
+    showSnack(
+      context,
+      result.queuedOffline
+          ? 'You are offline. The change is saved on this phone and will be '
+                'sent when you are back online.'
+          : 'Moved to ${result.status.label.toLowerCase()}',
     );
   }
 
@@ -266,7 +297,6 @@ class _DetailBody extends ConsumerWidget {
                 history: history,
               ),
             ),
-            // Step 8 adds the staff "Update status" action here.
           ],
         ),
       ),

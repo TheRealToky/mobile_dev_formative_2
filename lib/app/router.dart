@@ -11,6 +11,7 @@ import '../features/incidents/feed_screen.dart';
 import '../features/incidents/incident_detail_screen.dart';
 import '../features/incidents/report_form_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/staff/staff_dashboard_screen.dart';
 import '../providers/auth_providers.dart';
 import 'app_shell.dart';
 import 'router_redirect.dart';
@@ -89,8 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: Routes.staffDashboard,
-                builder: (context, state) =>
-                    const _PlaceholderScreen('Dashboard'),
+                builder: (context, state) => const StaffDashboardScreen(),
               ),
             ],
           ),
@@ -107,18 +107,3 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
-
-/// Temporary screen used until each feature screen is built.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(title)),
-    );
-  }
-}

@@ -97,6 +97,13 @@ abstract final class Validators {
         : null;
   }
 
+  /// A rejection must say why, so the reporter is not left guessing.
+  static String? rejectionNote(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Say why the report is rejected.';
+    return statusNote(v);
+  }
+
   /// Checks trimmed length so "     " does not count as a title.
   static String? _length(
     String? value, {

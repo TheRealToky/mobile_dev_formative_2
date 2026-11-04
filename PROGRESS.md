@@ -24,12 +24,51 @@ student commits at each checkpoint.
 | 4 | Rules, users collection, `isStaffProvider` | Done, committed |
 | 5 | Incident repository, streams, feed, reusable widgets | Done, committed |
 | 6 | Report form, photo upload, cleanup on failure | Done, committed |
-| 7 | Detail, edit/delete, status timeline | Done, awaiting commit |
-| 8 | Staff status update (batch), dashboard | Not started |
+| 7 | Detail, edit/delete, status timeline | Done, committed |
+| 8 | Staff status update (batch), dashboard | Done, awaiting commit |
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 6.
+Last checkpoint confirmed committed: step 7.
+
+## Step 8 details
+
+- `StatusController` (`lib/providers/status_controller.dart`,
+  `AsyncNotifierProvider.autoDispose`): checks the caller is staff and that
+  `IncidentStatus.canMoveTo(to)` holds, then calls
+  `IncidentRepository.updateStatus`, which writes the incident update and
+  the `statusHistory` entry in **one batch** (the rules check both halves
+  with `get`/`getAfter`). Same offline handling as reports: no server
+  confirmation within 15 s -> reported as queued.
+- `StatusUpdateSheet` (`lib/features/staff/status_update_sheet.dart`):
+  modal bottom sheet opened from the detail screen's "Update status" button
+  (staff only, hidden once the report is resolved or rejected). Offers only
+  `allowedNext` as chips, so an invalid move cannot be picked. Optional note
+  (max 500), **required when rejecting** (`Validators.rejectionNote`); the
+  reporter sees it in the timeline. Snack: "Moved to under review".
+- `StaffDashboardScreen` (`/staff`, tab visible to staff only, route
+  guarded by `redirectFor`): "N open of M reports", one tile per status with
+  its count (open statuses are quick filters for the queue; tap again to
+  clear), then the open queue **oldest first**, using `IncidentCard`.
+  Pull to refresh; loading, error and empty states.
+- `dashboard_providers.dart`: `allIncidentsStreamProvider` (unfiltered,
+  staff only, independent of feed filters), `dashboardStatsProvider`
+  (`DashboardStats.from`, pure and tested), `dashboardQueueFilterProvider`.
+- Router: dashboard placeholder replaced; `_PlaceholderScreen` removed.
+- Tests: `test/providers/status_controller_test.dart` (staff success with
+  note, student refused, invalid transition refused, repository error,
+  offline queue) and `test/features/staff_screens_test.dart` (stats,
+  dashboard order and quick filter, sheet offers only allowed statuses,
+  rejection needs a reason, "Update status" visible to staff only and hidden
+  on final reports). 111 tests pass; `flutter analyze` clean.
+
+### Report notes from step 8
+
+- Rejection requires a reason in the app (UX rule); the Security Rules
+  allow an empty note, so this is a client-side policy only.
+- The dashboard counts come from the same 200-document window as the feed
+  (`feedLimit`); a larger deployment would use Firestore `count()`
+  aggregation queries instead.
 
 ## Step 7 details
 
