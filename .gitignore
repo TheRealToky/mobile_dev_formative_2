@@ -53,3 +53,7 @@ firebase-debug.log*
 firestore-debug.log*
 storage-debug.log*
 ui-debug.log*
+
+# Miscellaneous
+PROGRESS.md
+REPORT_ASSETS.md
