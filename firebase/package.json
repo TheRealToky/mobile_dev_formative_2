@@ -1,0 +1,14 @@
+{
+  "name": "campus-reports-rules-tests",
+  "private": true,
+  "description": "Security Rules tests for firestore.rules and storage.rules, run against the Firebase Emulator Suite.",
+  "type": "module",
+  "scripts": {
+    "test": "mocha --timeout 20000 --exit \"test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.2.0",
+    "mocha": "^12.0.3"
+  }
+}

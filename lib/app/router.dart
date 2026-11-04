@@ -45,8 +45,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const VerifyEmailScreen(),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell, showStaffTab: false),
+        builder: (context, state, navigationShell) => Consumer(
+          builder: (context, ref, _) => AppShell(
+            navigationShell: navigationShell,
+            showStaffTab: ref.watch(isStaffProvider),
+          ),
+        ),
         branches: [
           StatefulShellBranch(
             routes: [

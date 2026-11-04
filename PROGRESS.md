@@ -20,8 +20,8 @@ student commits at each checkpoint.
 | 0 | Architecture review + `DESIGN_NOTES.md` | Done, committed |
 | 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Done, committed |
 | 2 | Models, validators, constants + unit tests | Done, committed |
-| 3 | Auth repository, providers, auth screens, router guards | Done, awaiting commit |
-| 4 | Rules, users collection, `isStaffProvider` | Not started |
+| 3 | Auth repository, providers, auth screens, router guards | Done, committed |
+| 4 | Rules, users collection, `isStaffProvider` | Done, awaiting commit |
 | 5 | Incident repository, streams, feed, reusable widgets | Not started |
 | 6 | Report form, photo upload, cleanup on failure | Not started |
 | 7 | Detail, edit/delete, status timeline | Not started |
@@ -29,7 +29,52 @@ student commits at each checkpoint.
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 2.
+Last checkpoint confirmed committed: step 3.
+
+## Step 4 details
+
+- `firestore.rules`: every rule requires a verified ALU email (`verified()`);
+  role from `users/{uid}.role` (`isStaff()` via `get()`).
+  - users: read own (or staff); create own with role `student` only; update
+    own `displayName` only; no delete.
+  - incidents: read for verified users; create validated (lengths, enums,
+    <= 3 photos, `status == 'submitted'`, own `reporterId`, server
+    timestamps, anonymous => no `reporterName`); reporter edit/delete only
+    while `submitted` and never `status`/`reporterId`/`createdAt`; staff may
+    change only `status` + `updatedAt`, only along the lifecycle; staff delete.
+  - statusHistory: read for verified users; create by staff with
+    `changedBy == uid`, and `from`/`to` must match the incident status before
+    (`get`) and after (`getAfter`) the batch; never updated; deletable by staff
+    only once the parent incident is gone (cleanup).
+- `storage.rules`: verified users, images only, < 5 MB, `ownerUid` custom
+  metadata must equal the uploader; uploading into an existing incident only
+  for its reporter (while `submitted`) or staff (`firestore.get`); delete by
+  uploader (while editable / after deletion) or staff; no overwrite.
+- `firestore.indexes.json`: category+status+createdAt, category+createdAt,
+  status+createdAt (all createdAt desc).
+- `firebase.json`: firestore/storage/emulator sections added (kept the
+  FlutterFire section).
+- Rules tests: `firebase/test/rules.test.js` (mocha +
+  `@firebase/rules-unit-testing`). Run from the project root:
+  `firebase emulators:exec --only firestore,storage "npm --prefix firebase test"`.
+- `isStaffProvider` + Dashboard tab shown only for staff.
+
+### Limitations to mention in the report
+
+- **Anonymous reports:** the name is never stored on the incident and
+  students cannot read other users' profiles, but the opaque `reporterId` is
+  still readable, so two anonymous reports by the same person can be linked.
+- **Storage ownership at upload time:** photos are uploaded before the
+  incident document exists, so for a *new* incident id the rules can only
+  check that the file is tagged with the uploader's uid, not that the uploader
+  will own the incident. Mitigation: no overwrites, files only deletable by
+  their uploader or staff, and unreferenced files never appear in the app.
+- **Status change without history:** rules guarantee a history entry always
+  matches a real status change, but they do not force every status change to
+  carry one (that would need an extra field or a Cloud Function). The app
+  always writes both in one batch.
+- Field lengths in rules count raw characters; the app trims before saving.
+- Staff promotion is manual (Console / Admin SDK).
 
 ## Step 3 details
 
@@ -137,13 +182,15 @@ Last checkpoint confirmed committed: step 2.
 - Hiding the reporter name on anonymous reports is a **UI-level** control:
   `reporterId` stays readable to signed-in users so staff can follow up.
   (Will be flagged again when the rules are written.)
-- **Android build not verified yet in this environment:** `flutter build apk
-  --debug` fails before compiling with Gradle's `java.io.IOException: Unable to
-  establish loopback connection` (inside and outside the sandbox). This is a
-  machine-level Java/Windows issue (the JDK's socket selector uses AF_UNIX
-  sockets in the temp folder, and `C:\Users\PC DISAINE\...` has a space), not
-  a project error. Fix to try: add
-  `org.gradle.jvmargs=... -Djdk.net.unixdomain.tmpdir=C:/Temp` (create
-  `C:\Temp`) or check firewall/antivirus blocking `java.exe` on localhost.
+- **Java on this machine (resolved, step 4):** Gradle and the Firestore
+  emulator failed with `Unable to establish loopback connection` /
+  `failed to open a new selector`. Cause: on Windows the JDK's NIO selector
+  creates an AF_UNIX socket in the temp folder, which fails under
+  `C:\Users\PC DISAINE\...`. Fix: point it at a folder without spaces via
+  `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:\Temp` (user environment
+  variable, not committed). Second issue: Kotlin incremental compilation fails
+  because the pub cache (C:) and the project (D:) are on different drives;
+  fixed with `kotlin.incremental=false` in `android/gradle.properties`.
+  `flutter build apk --debug` now succeeds.
 - Fonts load via `google_fonts` at runtime; first launch offline falls back
   to the system font.

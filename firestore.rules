@@ -1,0 +1,198 @@
+rules_version = '2';
+
+// Security Rules for the Campus Incident Reporting App.
+//
+// These are the authoritative access control. The app hides buttons and
+// redirects routes for usability, but a modified client still cannot do
+// anything these rules do not allow.
+//
+// Values mirrored from lib/core/constants.dart and lib/data/models/:
+//   allowed email domains, field limits, category/status enums, and the
+//   status lifecycle (IncidentStatus.allowedNext).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Identity ----------
+
+    // Signed in with a verified ALU email. Every rule below requires this,
+    // so unverified and non-ALU accounts can read and write nothing.
+    function verified() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower()
+             .matches('^[^@]+@(alustudent[.]com|alueducation[.]com)$');
+    }
+
+    function userDoc(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    // Role comes from users/{uid}.role, which clients cannot set to 'staff'.
+    function isStaff() {
+      return verified()
+        && exists(userDoc(request.auth.uid))
+        && get(userDoc(request.auth.uid)).data.role == 'staff';
+    }
+
+    // ---------- Validation helpers ----------
+
+    function validCategory(c) {
+      return c in ['water', 'electricity', 'facilities', 'furniture',
+                   'sanitation', 'safety', 'other'];
+    }
+
+    function validStatus(s) {
+      return s in ['submitted', 'under_review', 'in_progress', 'resolved',
+                   'rejected'];
+    }
+
+    // Mirror of IncidentStatus.allowedNext in the app.
+    function validTransition(from, to) {
+      return (from == 'submitted' && to == 'under_review')
+        || (from == 'under_review' && to in ['in_progress', 'rejected'])
+        || (from == 'in_progress' && to == 'resolved');
+    }
+
+    // Shape and limits of an incident document.
+    function validIncident(d) {
+      return d.keys().hasAll(['title', 'description', 'category', 'status',
+                              'location', 'photoUrls', 'reporterId',
+                              'isAnonymous', 'createdAt', 'updatedAt'])
+        && d.keys().hasOnly(['title', 'description', 'category', 'status',
+                             'location', 'photoUrls', 'reporterId',
+                             'reporterName', 'isAnonymous', 'createdAt',
+                             'updatedAt'])
+        && d.title is string && d.title.size() >= 5 && d.title.size() <= 80
+        && d.description is string
+        && d.description.size() >= 10 && d.description.size() <= 1000
+        && validCategory(d.category)
+        && validStatus(d.status)
+        && d.location is map
+        && d.location.keys().hasOnly(['building', 'detail'])
+        && d.location.building is string && d.location.building.size() > 0
+        && d.location.detail is string && d.location.detail.size() <= 120
+        && d.photoUrls is list && d.photoUrls.size() <= 3
+        && d.isAnonymous is bool
+        // Anonymous reports must not carry the reporter's name.
+        && (d.isAnonymous == false || d.get('reporterName', null) == null)
+        && (d.get('reporterName', null) == null
+            || (d.reporterName is string && d.reporterName.size() <= 50));
+    }
+
+    // ---------- users/{uid} ----------
+
+    match /users/{uid} {
+      // Own profile, or staff (to see who filed an anonymous report).
+      // Students cannot read each other's profiles, so a reporterId alone
+      // does not reveal an anonymous reporter's name.
+      allow read: if verified() && (request.auth.uid == uid || isStaff());
+
+      // Only your own document, and only ever as a student.
+      allow create: if verified()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(
+             ['displayName', 'email', 'role', 'createdAt'])
+        && request.resource.data.role == 'student'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 50
+        && request.resource.data.createdAt == request.time;
+
+      // You may change your name, never your role or email. Staff promotion
+      // is done by an administrator in the Console or with the Admin SDK,
+      // which bypasses these rules.
+      allow update: if verified()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 50;
+
+      allow delete: if false;
+    }
+
+    // ---------- incidents/{incidentId} ----------
+
+    match /incidents/{incidentId} {
+      allow read: if verified();
+
+      // New reports always start as 'submitted', filed by the caller, with
+      // server timestamps (the client clock is not trusted).
+      allow create: if verified()
+        && validIncident(request.resource.data)
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      // Reporter edits: own report, only while still 'submitted', and never
+      // the reporter, status or creation time.
+      function isReporterEdit() {
+        return verified()
+          && resource.data.reporterId == request.auth.uid
+          && resource.data.status == 'submitted'
+          && validIncident(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['title', 'description', 'category', 'location',
+                         'photoUrls', 'isAnonymous', 'reporterName',
+                         'updatedAt'])
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      // Staff status changes: only status + updatedAt, only along the
+      // lifecycle. The matching history entry is checked below.
+      function isStaffStatusChange() {
+        return isStaff()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status', 'updatedAt'])
+          && validTransition(resource.data.status, request.resource.data.status)
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      allow update: if isReporterEdit() || isStaffStatusChange();
+
+      // Reporter may withdraw while 'submitted'; staff may remove spam or
+      // duplicates at any time.
+      allow delete: if isStaff()
+        || (verified()
+            && resource.data.reporterId == request.auth.uid
+            && resource.data.status == 'submitted');
+
+      // ---------- incidents/{incidentId}/statusHistory/{eventId} ----------
+
+      match /statusHistory/{eventId} {
+        function incidentPath() {
+          return /databases/$(database)/documents/incidents/$(incidentId);
+        }
+
+        allow read: if verified();
+
+        // Audit entry written by staff in the same batch as the status
+        // change: 'from' must be the status before the batch and 'to' the
+        // status after it, so entries cannot be invented or misreported.
+        allow create: if isStaff()
+          && request.resource.data.keys().hasOnly(
+               ['from', 'to', 'note', 'changedBy', 'at'])
+          && request.resource.data.changedBy == request.auth.uid
+          && request.resource.data.at == request.time
+          && request.resource.data.note is string
+          && request.resource.data.note.size() <= 500
+          && validTransition(request.resource.data.from,
+                             request.resource.data.to)
+          && get(incidentPath()).data.status == request.resource.data.from
+          && getAfter(incidentPath()).data.status == request.resource.data.to;
+
+        // Immutable while the incident exists. Staff may only clear entries
+        // left behind after the incident itself was deleted.
+        allow update: if false;
+        allow delete: if isStaff() && !existsAfter(incidentPath());
+      }
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

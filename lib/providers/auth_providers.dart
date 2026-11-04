@@ -61,6 +61,14 @@ final currentUserProfileProvider = StreamProvider<AppUser?>((ref) async* {
       );
 });
 
+/// Whether the signed-in user has the staff role.
+///
+/// Derived from the profile, so it is `false` while loading and after logout.
+/// Used to show staff-only UI; Security Rules perform the real check.
+final isStaffProvider = Provider<bool>(
+  (ref) => ref.watch(currentUserProfileProvider).value?.isStaff ?? false,
+);
+
 /// Where the user is in the sign-in journey; the router redirects from it.
 sealed class SessionState {
   const SessionState();

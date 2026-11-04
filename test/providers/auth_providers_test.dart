@@ -99,6 +99,49 @@ void main() {
     });
   });
 
+  group('isStaffProvider', () {
+    Future<bool> isStaffFor(UserRole role) async {
+      when(
+        () => users.watchOrCreateProfile(
+          uid: any(named: 'uid'),
+          email: any(named: 'email'),
+          displayName: any(named: 'displayName'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.value(
+          AppUser(
+            uid: 'uid1',
+            displayName: 'Ada',
+            email: 'ada@alustudent.com',
+            role: role,
+            createdAt: DateTime(2026),
+          ),
+        ),
+      );
+      final container = makeContainer();
+      container.listen(isStaffProvider, (_, _) {});
+      authEvents.add(mockUser());
+      await settle();
+      await settle();
+      return container.read(isStaffProvider);
+    }
+
+    test('is true only for the staff role', () async {
+      expect(await isStaffFor(UserRole.staff), isTrue);
+    });
+
+    test('is false for students', () async {
+      expect(await isStaffFor(UserRole.student), isFalse);
+    });
+
+    test('is false while signed out', () async {
+      final container = makeContainer();
+      authEvents.add(null);
+      await settle();
+      expect(container.read(isStaffProvider), isFalse);
+    });
+  });
+
   group('AuthController', () {
     test('exposes a friendly error when sign-in fails', () async {
       when(
