@@ -22,14 +22,50 @@ student commits at each checkpoint.
 | 2 | Models, validators, constants + unit tests | Done, committed |
 | 3 | Auth repository, providers, auth screens, router guards | Done, committed |
 | 4 | Rules, users collection, `isStaffProvider` | Done, committed |
-| 5 | Incident repository, streams, feed, reusable widgets | Done, awaiting commit |
-| 6 | Report form, photo upload, cleanup on failure | Not started |
+| 5 | Incident repository, streams, feed, reusable widgets | Done, committed |
+| 6 | Report form, photo upload, cleanup on failure | Done, awaiting commit |
 | 7 | Detail, edit/delete, status timeline | Not started |
 | 8 | Staff status update (batch), dashboard | Not started |
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 4.
+Last checkpoint confirmed committed: step 5.
+
+## Step 6 details
+
+- `StorageRepository` / `FirebaseStorageRepository`: upload JPEG bytes to
+  `incident_photos/{incidentId}/{timestamp}.jpg` with `ownerUid` metadata and
+  progress; delete by URL (missing = fine). Missing bucket (Spark plan) ->
+  "Photo uploads are not available right now. Remove the photos...".
+  Storage retry time cut to 30 s so offline uploads fail promptly.
+- `lib/data/services/photo_services.dart`: `PhotoSource` (image_picker,
+  camera or gallery) and `ImageCompressor` (flutter_image_compress, JPEG,
+  1600 px / q80, falls back to 1280 px / q65 if > 5 MB, `keepExif: false` so
+  GPS/device EXIF is removed).
+- `ReportDraft` + `DraftPhoto` (sealed: `RemotePhoto` / `LocalPhoto`).
+- `reportControllerProvider` (AsyncNotifier): `submit`, `saveEdit`,
+  `delete`. Progress via `AsyncLoading(progress:)` (uploads 0-90 %, write
+  90-100 %). Upload first, write second; on any failure delete the photos
+  uploaded so far. Edit deletes removed photos only after the save succeeds.
+  Delete removes the document, then photos (best effort).
+- **Offline handling (matrix #10):** if the Firestore write is not confirmed
+  within 15 s, the report is treated as queued offline (Firestore keeps the
+  write and sends it on reconnect; fixed document id, so no duplicate), the
+  user is told so, and photos are NOT deleted.
+- Report form: category chips, title, description, building dropdown,
+  optional detail, up to 3 photos (thumbnails + remove), anonymous switch,
+  validation on submit and on blur, inputs locked + progress while saving,
+  snackbar + open the new report on success. Form state lives in
+  `FormField`s, so the screen uses no `setState`.
+- `PhotoPicker` has no widget preview: it uses `dart:io` (`Image.file`),
+  which the web-based previewer cannot run.
+- 85 tests passing.
+
+### Needs the student
+
+- Photo upload against the real backend needs a Storage bucket, which on a
+  new project needs the **Blaze** plan. Without it, reports without photos
+  work, and reports with photos fail with the message above.
 
 ## Step 5 details
 

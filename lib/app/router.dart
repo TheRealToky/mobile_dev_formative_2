@@ -7,6 +7,7 @@ import '../features/auth/register_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/auth/verify_email_screen.dart';
 import '../features/incidents/feed_screen.dart';
+import '../features/incidents/report_form_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../providers/auth_providers.dart';
 import 'app_shell.dart';
@@ -70,8 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: Routes.report,
-                builder: (context, state) =>
-                    const _PlaceholderScreen('Report an issue'),
+                builder: (context, state) => const ReportFormScreen(),
               ),
             ],
           ),
