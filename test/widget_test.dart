@@ -1,21 +1,27 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_dev_formative_2/app/app.dart';
 import 'package:mobile_dev_formative_2/app/theme.dart';
+import 'package:mobile_dev_formative_2/providers/auth_providers.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'helpers/fakes.dart';
 
 void main() {
-  testWidgets('app boots into the shell with bottom navigation', (
-    tester,
-  ) async {
+  testWidgets('signed-out users land on the login screen', (tester) async {
+    final auth = MockAuthRepository();
+    when(() => auth.userChanges()).thenAnswer((_) => Stream.value(null));
+
     await tester.pumpWidget(
-      const ProviderScope(child: CampusApp(useGoogleFont: false)),
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(auth)],
+        child: const CampusApp(useGoogleFont: false),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Feed'), findsOneWidget);
-    expect(find.text('Dashboard'), findsNothing);
+    expect(find.text('Log in'), findsWidgets);
+    expect(find.text('Create an account'), findsOneWidget);
   });
 
   test('both themes carry the status colour extension', () {

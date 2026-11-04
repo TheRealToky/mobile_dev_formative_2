@@ -19,8 +19,8 @@ student commits at each checkpoint.
 |---|---|---|
 | 0 | Architecture review + `DESIGN_NOTES.md` | Done, committed |
 | 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Done, committed |
-| 2 | Models, validators, constants + unit tests | Done, awaiting commit |
-| 3 | Auth repository, providers, auth screens, router guards | Not started |
+| 2 | Models, validators, constants + unit tests | Done, committed |
+| 3 | Auth repository, providers, auth screens, router guards | Done, awaiting commit |
 | 4 | Rules, users collection, `isStaffProvider` | Not started |
 | 5 | Incident repository, streams, feed, reusable widgets | Not started |
 | 6 | Report form, photo upload, cleanup on failure | Not started |
@@ -29,7 +29,44 @@ student commits at each checkpoint.
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 1.
+Last checkpoint confirmed committed: step 2.
+
+## Step 3 details
+
+- `AuthRepository` / `FirebaseAuthRepository`: register (domain check, display
+  name, verification email), sign in, sign out, resend, password reset,
+  reload + token refresh. `FirebaseAuthException` codes -> messages in
+  `authErrorMessage()`; wrong password and unknown user share one message.
+- `UserRepository.watchOrCreateProfile`: creates `users/{uid}` (role
+  `student`) on the **first verified login**, matching the report's Figure 3
+  (rules require a verified email, so the doc cannot be created at
+  registration time).
+- Providers (`lib/providers/`): `firebaseAuthProvider`, `firestoreProvider`,
+  `storageProvider`, `authRepositoryProvider`, `userRepositoryProvider`,
+  `authStateProvider`, `currentUserProfileProvider`, `sessionProvider` (sealed
+  `SessionState`: loading / signed out / unverified / ready / error),
+  `authControllerProvider` (AsyncNotifier for auth actions).
+- Router: `redirectFor(session, location)` is a pure, unit-tested function;
+  `routerProvider` re-runs it via `refreshListenable` when the session changes.
+  Splash until auth + profile resolve.
+- Screens: Login (password toggle, forgot password), Register, Verify Email
+  (5 s polling, check on app resume, 60 s resend cooldown, "use a different
+  account"), Splash (with retry/log out on profile error), minimal Profile with
+  logout (polished in step 9).
+- Shared widgets: `LoadingButton`, `PasswordField`, `AuthLayout`.
+- `lib/core/errors.dart`: `UserFacingException` + `friendlyError()`; all
+  repositories throw user-facing messages.
+- 49 tests passing.
+
+### Report differences from step 3
+
+- `authStateProvider` listens to `userChanges()`, a superset of
+  `authStateChanges()` that also fires after `reload()`/token refresh, which
+  is how the app notices verification. Section 5 of the report names
+  `authStateChanges()`; say "userChanges() (a superset of authStateChanges)".
+- Extra providers not in the report's inventory: `sessionProvider`,
+  `authControllerProvider`, `userRepositoryProvider`.
+- Extra feature: "Forgot password?" reset email on the login screen.
 
 ## Step 2 details
 
