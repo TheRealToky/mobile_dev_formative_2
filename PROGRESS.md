@@ -23,13 +23,55 @@ student commits at each checkpoint.
 | 3 | Auth repository, providers, auth screens, router guards | Done, committed |
 | 4 | Rules, users collection, `isStaffProvider` | Done, committed |
 | 5 | Incident repository, streams, feed, reusable widgets | Done, committed |
-| 6 | Report form, photo upload, cleanup on failure | Done, awaiting commit |
-| 7 | Detail, edit/delete, status timeline | Not started |
+| 6 | Report form, photo upload, cleanup on failure | Done, committed |
+| 7 | Detail, edit/delete, status timeline | Done, awaiting commit |
 | 8 | Staff status update (batch), dashboard | Not started |
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 5.
+Last checkpoint confirmed committed: step 6.
+
+## Step 7 details
+
+- Providers (`incident_providers.dart`): `incidentDocProvider(id)` and
+  `statusHistoryProvider(id)` (both `StreamProvider.autoDispose.family`, torn
+  down on logout), `incidentByIdProvider(id)` combining them into one
+  `AsyncValue<({Incident? incident, List<StatusEvent> history})>`, and
+  `reporterProfileProvider(uid)` (staff only; returns `null` for students so
+  the denied `users` read is never attempted).
+- `IncidentDetailScreen` (`/incidents/:id`): status chip + large lifecycle
+  rail, title/category, location, reporter line, dates, description, photo
+  gallery, status timeline. Live: a staff change appears without refresh.
+  - Reporter line respects anonymity: students see "Reported anonymously";
+    the reporter sees "Reported anonymously by you"; staff see the name
+    (looked up from `users/{uid}`) marked "visible to staff only".
+  - Edit + Delete for the reporter while `submitted`; Delete for staff.
+    `permissionsFor()` is a pure function mirroring the rules (unit tested).
+  - Delete asks for confirmation, then `ReportController.delete` (document,
+    history, photos), pops and shows "Report deleted".
+  - A deleted report (doc becomes `null`) shows an empty state.
+  - Slot left for the staff "Update status" action (step 8).
+- `StatusTimeline` (`lib/widgets/status_timeline.dart`): chronological,
+  starting with a synthetic "Submitted" entry from `createdAt` (history
+  docs only exist for staff changes), each later entry with time, "by staff"
+  and the note. `buildTimeline()` is pure and tested.
+- `PhotoGallery` + `FullScreenPhotos`: horizontal strip, tap opens a
+  full-screen, swipeable, pinch-to-zoom viewer (`InteractiveViewer`, Hero).
+- `EditIncidentScreen` (`/incidents/:id/edit`, nested route): loads the live
+  doc and shows `ReportFormScreen(initial:)` only to the reporter while
+  `submitted`; otherwise explains why (deleted / not yours / staff started).
+- Tests: `test/features/incident_detail_screen_test.dart` (permissions,
+  timeline order, owner/other student/staff views, anonymous name hidden,
+  delete confirmation, deleted state, live status change) and
+  `incidentByIdProvider` against fake Firestore. 98 tests pass;
+  `flutter analyze` clean.
+
+### Report notes from step 7
+
+- The timeline is oldest first (reads submission to resolution);
+  DESIGN_NOTES.md updated from "newest first".
+- Staff can delete any report (moderation) but cannot edit its content;
+  they change it only through status updates.
 
 ## Step 6 details
 
@@ -92,7 +134,7 @@ Last checkpoint confirmed committed: step 5.
   view with retry, thin progress bar on filter changes, max width 640.
 - Widget previews in `lib/widgets/previews.dart` (light + dark), run with
   `flutter widget-preview start`. Not opened in this session.
-- Detail route `/incidents/:id` is a placeholder until step 7.
+- Detail route `/incidents/:id` was a placeholder until step 7 (now built).
 - 74 tests passing.
 
 ### Report notes from step 5

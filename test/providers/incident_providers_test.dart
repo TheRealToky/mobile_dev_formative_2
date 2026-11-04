@@ -120,4 +120,42 @@ void main() {
     final c = makeContainer(signedIn: false);
     expect(await feedIds(c), isEmpty);
   });
+
+  group('incidentByIdProvider', () {
+    test('combines the incident with its history, oldest first', () async {
+      await db.doc('incidents/tap/statusHistory/b').set({
+        'from': 'under_review',
+        'to': 'in_progress',
+        'note': '',
+        'changedBy': 'staff1',
+        'at': DateTime(2026, 1, 5),
+      });
+      await db.doc('incidents/tap/statusHistory/a').set({
+        'from': 'submitted',
+        'to': 'under_review',
+        'note': 'Seen',
+        'changedBy': 'staff1',
+        'at': DateTime(2026, 1, 4),
+      });
+      final c = makeContainer();
+      c.listen(incidentByIdProvider('tap'), (_, _) {});
+      await c.read(incidentDocProvider('tap').future);
+      await c.read(statusHistoryProvider('tap').future);
+
+      final detail = c.read(incidentByIdProvider('tap')).requireValue;
+      expect(detail.incident?.title, 'Leaking tap');
+      expect(detail.history.map((e) => e.note), ['Seen', '']);
+    });
+
+    test('a missing document gives null, not an error', () async {
+      final c = makeContainer();
+      c.listen(incidentByIdProvider('gone'), (_, _) {});
+      await c.read(incidentDocProvider('gone').future);
+      await c.read(statusHistoryProvider('gone').future);
+
+      final value = c.read(incidentByIdProvider('gone'));
+      expect(value.hasError, isFalse);
+      expect(value.requireValue.incident, isNull);
+    });
+  });
 }

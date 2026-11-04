@@ -6,7 +6,9 @@ import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/auth/verify_email_screen.dart';
+import '../features/incidents/edit_incident_screen.dart';
 import '../features/incidents/feed_screen.dart';
+import '../features/incidents/incident_detail_screen.dart';
 import '../features/incidents/report_form_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../providers/auth_providers.dart';
@@ -46,10 +48,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.verifyEmail,
         builder: (context, state) => const VerifyEmailScreen(),
       ),
-      // Detail opens full screen above the tabs (built in step 7).
+      // Detail and edit open full screen above the tabs.
       GoRoute(
         path: Routes.incidentDetail,
-        builder: (context, state) => const _PlaceholderScreen('Report'),
+        builder: (context, state) =>
+            IncidentDetailScreen(incidentId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) =>
+                EditIncidentScreen(incidentId: state.pathParameters['id']!),
+          ),
+        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => Consumer(

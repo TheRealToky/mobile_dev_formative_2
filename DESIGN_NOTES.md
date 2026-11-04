@@ -171,7 +171,7 @@ Detail
   Title / category / location
   ●──●──●──○  In progress
   Description
-  Timeline (statusHistory, newest first)
+  Timeline (statusHistory, oldest first)
   [Update status] (staff)   [Edit] [Delete] (reporter, while Submitted)
 ```
 
