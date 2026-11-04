@@ -32,6 +32,13 @@ final incidentsStreamProvider = StreamProvider<List<Incident>>((ref) {
       );
 });
 
+/// The signed-in user's own reports, newest first (Profile screen).
+final myIncidentsProvider = StreamProvider.autoDispose<List<Incident>>((ref) {
+  final uid = ref.watch(_signedInUidProvider);
+  if (uid == null) return Stream.value(const []);
+  return ref.watch(incidentRepositoryProvider).watchMyIncidents(uid);
+});
+
 /// One incident, live. `null` once deleted. Auto-disposed when the detail
 /// screen closes, so streams do not pile up.
 final incidentDocProvider = StreamProvider.autoDispose

@@ -25,11 +25,43 @@ student commits at each checkpoint.
 | 5 | Incident repository, streams, feed, reusable widgets | Done, committed |
 | 6 | Report form, photo upload, cleanup on failure | Done, committed |
 | 7 | Detail, edit/delete, status timeline | Done, committed |
-| 8 | Staff status update (batch), dashboard | Done, awaiting commit |
-| 9 | Profile, polish, states, dark mode | Not started |
+| 8 | Staff status update (batch), dashboard | Done, committed |
+| 9 | Profile, polish, states, dark mode | Done, awaiting commit |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 7.
+Last checkpoint confirmed committed: step 8.
+
+## Step 9 details
+
+- Profile screen rebuilt: initials avatar, name, email, `RoleBadge`
+  (icon + text; staff in the primary colour), "My reports" (live list of
+  the user's own reports, including anonymous ones, with "N reports, M still
+  open"), Appearance (System / Light / Dark), and Log out with a
+  confirmation dialog.
+- New query `IncidentRepository.watchMyIncidents(uid)`
+  (`reporterId == uid`, newest first) and `myIncidentsProvider`. Needs a new
+  composite index (`reporterId` ASC, `createdAt` DESC), added to
+  `firestore.indexes.json` -> **deploy indexes again** (README step).
+- `themeModeProvider` (`lib/providers/theme_providers.dart`) drives
+  `MaterialApp.themeMode`. In memory only (resets to System on restart);
+  persisting would need an extra package. Limitation for the report.
+- States audit: feed, detail, edit, dashboard and profile each have
+  loading, empty (with a next action) and error (with retry) states; forms
+  disable input and show a spinner while saving; splash has retry + log out.
+  The profile's "My reports" was the only gap and now has all three.
+- Dark mode / accessibility checks, automated:
+  - `test/app/theme_contrast_test.dart`: every status colour pair meets
+    WCAG AA 4.5:1 (chip text on its container) and 3:1 (icon/rail on the
+    page), in light and dark; body text on surface meets 4.5:1.
+  - `test/features/dark_mode_smoke_test.dart`: feed, detail, dashboard and
+    profile rendered in dark mode at 320 x 640 with 1.3x text, with no
+    exceptions or overflow. This caught a real overflow: `StatusChip`
+    labels now shrink with an ellipsis (full label kept in Semantics).
+- Tests: `test/features/profile_screen_test.dart` (badge per role, initials,
+  my reports + count, empty state, theme switch, log out confirm) and a
+  repository test for `watchMyIncidents`. 144 tests pass; analyze clean.
+- Still to check by hand on a phone (manual matrix, step 10): dark mode on a
+  real device, TalkBack reading order.
 
 ## Step 8 details
 

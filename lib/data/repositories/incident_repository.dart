@@ -17,6 +17,10 @@ abstract interface class IncidentRepository {
     IncidentStatus? status,
   });
 
+  /// Real-time list of the reports filed by [reporterUid], newest first
+  /// (Profile, "My reports"). Includes the user's anonymous reports.
+  Stream<List<Incident>> watchMyIncidents(String reporterUid);
+
   /// Real-time single incident; emits `null` once it is deleted.
   Stream<Incident?> watchIncident(String id);
 
@@ -87,6 +91,19 @@ class FirestoreIncidentRepository implements IncidentRepository {
         )
         .userFacingErrors();
   }
+
+  @override
+  Stream<List<Incident>> watchMyIncidents(String reporterUid) => _incidents
+      .where('reporterId', isEqualTo: reporterUid)
+      .orderBy('createdAt', descending: true)
+      .limit(feedLimit)
+      .snapshots()
+      .map(
+        (snap) => [
+          for (final doc in snap.docs) Incident.fromMap(doc.id, doc.data()),
+        ],
+      )
+      .userFacingErrors();
 
   @override
   Stream<Incident?> watchIncident(String id) =>

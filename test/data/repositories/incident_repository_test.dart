@@ -86,6 +86,23 @@ void main() {
         ['mid'],
       );
     });
+    test('watchMyIncidents returns only the caller reports', () async {
+      await seed(
+        buildIncident(id: 'other', reporterId: 'uid2'),
+        at: DateTime(2026, 7, 1),
+      );
+      await seed(
+        buildIncident(id: 'anon', isAnonymous: true, reporterName: null),
+        at: DateTime(2026, 8, 1),
+      );
+      expect(ids(await repo.watchMyIncidents('uid1').first), [
+        'anon',
+        'new',
+        'mid',
+        'old',
+      ]);
+      expect(ids(await repo.watchMyIncidents('uid2').first), ['other']);
+    });
   });
 
   test('updateIncident only writes reporter-editable fields', () async {

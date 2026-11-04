@@ -34,7 +34,16 @@ class StatusChip extends StatelessWidget {
             children: [
               Icon(status.icon, size: 16, color: palette.foreground),
               const SizedBox(width: Gap.xs),
-              Text(status.label, style: style),
+              // Shrinks with an ellipsis on very narrow cards or large text
+              // instead of overflowing; the full label stays in Semantics.
+              Flexible(
+                child: Text(
+                  status.label,
+                  style: style,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),

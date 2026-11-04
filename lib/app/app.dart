@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/theme_providers.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -18,6 +19,7 @@ class CampusApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(useGoogleFont: useGoogleFont),
       darkTheme: AppTheme.dark(useGoogleFont: useGoogleFont),
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: ref.watch(routerProvider),
     );
   }
