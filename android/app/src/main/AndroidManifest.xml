@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Firestore, Auth and Storage need network access in release builds. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mobile_dev_formative_2"
+        android:label="Campus Reports"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

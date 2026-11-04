@@ -17,8 +17,8 @@ student commits at each checkpoint.
 
 | Step | Description | Status |
 |---|---|---|
-| 0 | Architecture review + `DESIGN_NOTES.md` | Done, awaiting commit |
-| 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Not started |
+| 0 | Architecture review + `DESIGN_NOTES.md` | Done, committed |
+| 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Done, awaiting commit |
 | 2 | Models, validators, constants + unit tests | Not started |
 | 3 | Auth repository, providers, auth screens, router guards | Not started |
 | 4 | Rules, users collection, `isStaffProvider` | Not started |
@@ -29,7 +29,28 @@ student commits at each checkpoint.
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: none yet.
+Last checkpoint confirmed committed: step 0 (`60e7060`).
+
+## Step 1 details
+
+- Dependencies (resolved with `flutter pub add`): flutter_riverpod 3.4,
+  go_router 18.1, firebase_core 5.1, firebase_auth 7.0, cloud_firestore 7.1,
+  firebase_storage 14.0, image_picker 1.2, flutter_image_compress 2.5,
+  timeago 3.7, google_fonts 8.0, intl 0.20. Dev: mocktail, fake_cloud_firestore
+  4.5, firebase_auth_mocks 0.16.
+- `firebase_storage_mocks` has no release for firebase_storage 14, so Storage is
+  faked behind the `StorageRepository` interface with mocktail instead.
+- `google_fonts` pinned to 8.x: 9.0 is built on the separate `material_ui`
+  package and its `TextTheme` type does not match Flutter 3.47's Material.
+- Riverpod 3 notes: `StateProvider` is legacy, so filter state will use
+  `Notifier`s; `AsyncValue.value` is nullable (no `valueOrNull`).
+- Router: `routerProvider` with a `StatefulShellRoute` (Feed, Report,
+  Dashboard, Profile branches) and placeholder screens; guards come in step 3.
+- Android: `INTERNET` permission, `minSdk = max(flutter default, 23)`, app label
+  "Campus Reports". No camera/storage permissions needed: image_picker uses the
+  system camera intent and Android photo picker. iOS usage strings added.
+- applicationId left as `com.example.mobile_dev_formative_2` because it must
+  match the Android app registered in Firebase (`google-services.json`).
 
 ## Notes on skills and tools
 
@@ -55,5 +76,13 @@ Last checkpoint confirmed committed: none yet.
 - Hiding the reporter name on anonymous reports is a **UI-level** control:
   `reporterId` stays readable to signed-in users so staff can follow up.
   (Will be flagged again when the rules are written.)
+- **Android build not verified yet in this environment:** `flutter build apk
+  --debug` fails before compiling with Gradle's `java.io.IOException: Unable to
+  establish loopback connection` (inside and outside the sandbox). This is a
+  machine-level Java/Windows issue (the JDK's socket selector uses AF_UNIX
+  sockets in the temp folder, and `C:\Users\PC DISAINE\...` has a space), not
+  a project error. Fix to try: add
+  `org.gradle.jvmargs=... -Djdk.net.unixdomain.tmpdir=C:/Temp` (create
+  `C:\Temp`) or check firewall/antivirus blocking `java.exe` on localhost.
 - Fonts load via `google_fonts` at runtime; first launch offline falls back
   to the system font.
