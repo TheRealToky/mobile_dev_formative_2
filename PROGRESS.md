@@ -21,15 +21,50 @@ student commits at each checkpoint.
 | 1 | Scaffold, dependencies, theme, router skeleton, Firebase init | Done, committed |
 | 2 | Models, validators, constants + unit tests | Done, committed |
 | 3 | Auth repository, providers, auth screens, router guards | Done, committed |
-| 4 | Rules, users collection, `isStaffProvider` | Done, awaiting commit |
-| 5 | Incident repository, streams, feed, reusable widgets | Not started |
+| 4 | Rules, users collection, `isStaffProvider` | Done, committed |
+| 5 | Incident repository, streams, feed, reusable widgets | Done, awaiting commit |
 | 6 | Report form, photo upload, cleanup on failure | Not started |
 | 7 | Detail, edit/delete, status timeline | Not started |
 | 8 | Staff status update (batch), dashboard | Not started |
 | 9 | Profile, polish, states, dark mode | Not started |
 | 10 | Tests, rules tests, docs, README, demo script, report assets | Not started |
 
-Last checkpoint confirmed committed: step 3.
+Last checkpoint confirmed committed: step 4.
+
+## Step 5 details
+
+- `IncidentRepository` / `FirestoreIncidentRepository`: `watchIncidents`
+  (server-side category/status `where` + `orderBy createdAt desc`, limit 200),
+  `watchIncident`, `watchHistory`, `newIncidentId`, `createIncident`,
+  `updateIncident` (reporter-editable fields only), `deleteIncident` (incident
+  + history in one batch), `updateStatus` (status + history entry in one
+  batch). Firebase errors -> `UserFacingException` via `firestore_errors.dart`.
+- Providers: `incidentRepositoryProvider`, `incidentsStreamProvider` (tied to
+  the signed-in uid so it resets on logout), `filteredIncidentsProvider`,
+  `searchQueryProvider`, `categoryFilterProvider`, `statusFilterProvider`
+  (Riverpod 3 `Notifier`s, not legacy `StateProvider`),
+  `hasActiveFiltersProvider`.
+- Automatic Riverpod retry disabled app-wide (`retry_policy.dart`): it hid
+  errors behind spinners; screens offer "Try again" instead.
+- Widgets: `IncidentCard` + `IncidentCardSkeleton`, `StatusChip`,
+  `LifecycleRail` (signature element), `CategoryIcon`, `CategoryPicker`,
+  `EmptyState`, `ErrorView`; status/category icons and colours in
+  `incident_visuals.dart` (exhaustive switches).
+- Feed: search bar, scrollable category and status chips (single choice
+  each, tap again to clear, combinable), result count, pull-to-refresh,
+  skeletons, empty states (no reports / no matches + "Clear filters"), error
+  view with retry, thin progress bar on filter changes, max width 640.
+- Widget previews in `lib/widgets/previews.dart` (light + dark), run with
+  `flutter widget-preview start`. Not opened in this session.
+- Detail route `/incidents/:id` is a placeholder until step 7.
+- 74 tests passing.
+
+### Report notes from step 5
+
+- Filters are single-choice per dimension (one category, one status), which
+  matches the indexed equality queries. "Combinable" = category AND status.
+- Feed is capped at the 200 newest matching reports; free-text search runs
+  over that window (already listed under Limitations: client-side search).
 
 ## Step 4 details
 

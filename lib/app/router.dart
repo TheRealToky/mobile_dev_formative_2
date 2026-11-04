@@ -6,6 +6,7 @@ import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/auth/verify_email_screen.dart';
+import '../features/incidents/feed_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../providers/auth_providers.dart';
 import 'app_shell.dart';
@@ -44,6 +45,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.verifyEmail,
         builder: (context, state) => const VerifyEmailScreen(),
       ),
+      // Detail opens full screen above the tabs (built in step 7).
+      GoRoute(
+        path: Routes.incidentDetail,
+        builder: (context, state) => const _PlaceholderScreen('Report'),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => Consumer(
           builder: (context, ref, _) => AppShell(
@@ -56,8 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: Routes.feed,
-                builder: (context, state) =>
-                    const _PlaceholderScreen('Reports'),
+                builder: (context, state) => const FeedScreen(),
               ),
             ],
           ),
