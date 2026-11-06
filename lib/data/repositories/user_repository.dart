@@ -6,8 +6,10 @@ import '../models/app_user.dart';
 /// Access to `users/{uid}` profile documents.
 abstract interface class UserRepository {
   /// Streams the profile for [uid]. If the document does not exist yet (first
-  /// login after verifying the email), it is created once with role
-  /// `student`, and the stream emits `null` until the write lands.
+  /// login after verifying the email), it is created once with the role
+  /// for the email domain ([UserRole.forEmail]), and the stream emits `null`
+  /// until the write lands. An existing document is never changed, so a role
+  /// edited in the console wins.
   Stream<AppUser?> watchOrCreateProfile({
     required String uid,
     required String email,
@@ -43,12 +45,12 @@ class FirestoreUserRepository implements UserRepository {
       yield null;
       if (!createRequested) {
         createRequested = true;
-        // The client may only ever create role 'student'; firestore.rules
-        // rejects anything else. Staff are promoted by an administrator.
+        // firestore.rules only accept the role that matches the email
+        // domain, so nobody can sign themselves up as staff.
         await _doc(uid).set({
           'displayName': displayName,
           'email': email,
-          'role': UserRole.student.value,
+          'role': UserRole.forEmail(email).value,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

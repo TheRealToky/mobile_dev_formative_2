@@ -13,15 +13,15 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/incident_card.dart';
 
-/// The signed-in user: who they are, their role, their own reports,
-/// appearance and log out.
+/// The signed-in user: who they are, their role, their own reports
+/// (students only; staff do not file reports), appearance and log out.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(currentUserProfileProvider).value;
-    final mine = ref.watch(myIncidentsProvider);
+    final isStaff = profile?.isStaff ?? false;
     final textTheme = Theme.of(context).textTheme;
 
     Widget heading(String text) => Padding(
@@ -44,8 +44,10 @@ class ProfileScreen extends ConsumerWidget {
               ),
               children: [
                 if (profile != null) _Header(profile: profile),
-                heading('My reports'),
-                ..._myReports(context, ref, mine),
+                if (!isStaff) ...[
+                  heading('My reports'),
+                  ..._myReports(context, ref, ref.watch(myIncidentsProvider)),
+                ],
                 heading('Appearance'),
                 const _ThemeModePicker(),
                 const SizedBox(height: Gap.xxl),

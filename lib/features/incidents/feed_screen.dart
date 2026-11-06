@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/routes.dart';
 import '../../app/theme.dart';
 import '../../data/models/incident.dart';
+import '../../providers/auth_providers.dart';
 import '../../providers/filter_providers.dart';
 import '../../providers/incident_providers.dart';
 import '../../widgets/empty_state.dart';
@@ -101,6 +102,12 @@ class _FeedBody extends ConsumerWidget {
                 message: 'No reports match these filters.',
                 actionLabel: 'Clear filters',
                 onAction: () => clearAllFilters(ref),
+              )
+            // Staff have no report form, so no button for them.
+            : ref.watch(isStaffProvider)
+            ? const EmptyState(
+                icon: Icons.task_alt,
+                message: 'No reports yet. Nothing needs attention.',
               )
             : EmptyState(
                 icon: Icons.task_alt,

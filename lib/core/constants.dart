@@ -13,6 +13,18 @@ const List<String> allowedEmailDomains = [
   'alueducation.si.com',
 ];
 
+/// Domains whose new accounts start with the `staff` role (everything else
+/// in [allowedEmailDomains], i.e. `alustudent.com`, starts as `student`).
+///
+/// Only the starting role: after sign-up `users/{uid}.role` is the source of
+/// truth, so changing it in the Firestore console switches the screens the
+/// user gets (handy for testing). Mirrored in `firestore.rules`
+/// (`roleForEmail()`).
+const List<String> staffEmailDomains = [
+  'alueducation.com',
+  'alueducation.si.com',
+];
+
 /// Campus buildings offered in the report form.
 ///
 /// These are plausible placeholders for the ALU Kigali campus, not an

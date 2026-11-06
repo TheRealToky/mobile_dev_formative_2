@@ -170,10 +170,10 @@ void main() {
       db: db,
     );
 
-    // Staff see the Dashboard tab with one open report.
-    await tester.tap(find.text('Dashboard'));
-    await tester.pumpAndSettle();
+    // Staff land on the Dashboard with one open report, and have no
+    // Report tab.
     expect(find.text('1 open of 1 reports'), findsOneWidget);
+    expect(find.text('Report'), findsNothing);
 
     // Open it and update the status with a note.
     await tester.tap(find.text('Broken chair in cafeteria'));

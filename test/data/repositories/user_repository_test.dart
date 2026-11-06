@@ -31,6 +31,39 @@ void main() {
     expect(stored['createdAt'], isNotNull);
   });
 
+  test('creates a staff profile for an @alueducation.com email', () async {
+    final emitted = await repo
+        .watchOrCreateProfile(
+          uid: 'uid1',
+          email: 'grace@alueducation.com',
+          displayName: 'Grace',
+        )
+        .take(2)
+        .toList();
+
+    expect(emitted.last?.role, UserRole.staff);
+    expect((await db.doc('users/uid1').get()).data()!['role'], 'staff');
+  });
+
+  test(
+    'never overwrites an existing profile (keeps the stored role)',
+    () async {
+      await db.doc('users/uid2').set({
+        'displayName': 'Sam',
+        'email': 'sam@alueducation.com',
+        'role': 'student',
+      });
+      final first = await repo
+          .watchOrCreateProfile(
+            uid: 'uid2',
+            email: 'sam@alueducation.com',
+            displayName: 'Sam',
+          )
+          .first;
+      expect(first?.isStaff, isFalse);
+    },
+  );
+
   test('never overwrites an existing profile (keeps staff role)', () async {
     await db.doc('users/uid1').set({
       'displayName': 'Grace',

@@ -37,7 +37,7 @@ void main() {
     expect(redirectFor(s, Routes.verifyEmail), isNull);
   });
 
-  test('ready users leave auth screens for the feed', () {
+  test('ready users leave auth screens for their role home', () {
     for (final route in [
       Routes.login,
       Routes.register,
@@ -45,14 +45,29 @@ void main() {
       Routes.verifyEmail,
     ]) {
       expect(redirectFor(student, route), Routes.feed, reason: route);
+      expect(redirectFor(staff, route), Routes.staffDashboard, reason: route);
     }
     expect(redirectFor(student, Routes.feed), isNull);
     expect(redirectFor(student, Routes.incident('abc')), isNull);
+    expect(redirectFor(staff, Routes.feed), isNull);
+    expect(redirectFor(staff, Routes.incident('abc')), isNull);
   });
 
   test('only staff may open staff routes', () {
     expect(redirectFor(student, Routes.staffDashboard), Routes.feed);
     expect(redirectFor(student, '${Routes.staffDashboard}/queue'), Routes.feed);
     expect(redirectFor(staff, Routes.staffDashboard), isNull);
+  });
+
+  test('the report form is for students only', () {
+    expect(redirectFor(student, Routes.report), isNull);
+    expect(redirectFor(staff, Routes.report), Routes.staffDashboard);
+    // Prefix match only on whole segments.
+    expect(redirectFor(student, '${Routes.staffDashboard}x'), isNull);
+  });
+
+  test('homeFor picks the dashboard for staff, the feed for students', () {
+    expect(homeFor(isStaff: true), Routes.staffDashboard);
+    expect(homeFor(isStaff: false), Routes.feed);
   });
 }

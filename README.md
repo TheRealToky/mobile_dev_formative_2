@@ -12,6 +12,9 @@ Leadership University.
 - **Staff** see a dashboard with counts per status and the open queue (oldest
   first), and move reports through the lifecycle with a note the reporter
   sees.
+- The role comes from the email: `@alustudent.com` accounts start as
+  students (Feed, Report, Profile), `@alueducation.com` accounts start as
+  staff and land on the Dashboard (Dashboard, Feed, Profile).
 
 ```
 submitted -> under review -> in progress -> resolved
@@ -46,7 +49,9 @@ Key points:
 
 - `sessionProvider` combines the auth user and the `users/{uid}` profile into
   one state (`loading / signedOut / unverified / ready / error`). The router's
-  pure `redirectFor()` uses it to guard every route, including `/staff`.
+  pure `redirectFor()` uses it to guard every route, including `/staff`,
+  and to send each role to its home screen. The role is read live from
+  `users/{uid}.role`, so editing it in the console switches screens at once.
 - Feeds, detail and dashboard are real-time Firestore streams, so a staff
   status change appears on the reporter's phone without a refresh.
 - A status change and its `statusHistory` entry are written in **one batch**,
@@ -129,14 +134,19 @@ flutter run
 
 ### 5. Create the accounts
 
-- [ ] **Student:** register in the app with an `@alustudent.com` (or
-      `@alueducation.com`) address and click the link in the verification
-      email. The profile document `users/{uid}` is created with
-      `role: "student"` on first verified login.
-- [ ] **Staff:** register a second account the same way and verify it, then
-      in the console open Firestore -> `users` -> that user's document and
-      change `role` from `student` to `staff`. Log out and back in. The
-      client can never set this itself; the rules reject it.
+- [ ] **Student:** register in the app with an `@alustudent.com` address
+      and click the link in the verification email. The profile document
+      `users/{uid}` is created with `role: "student"` on first verified
+      login, and the app opens on the Feed.
+- [ ] **Staff:** register with an `@alueducation.com` address and verify
+      it. The profile is created with `role: "staff"` and the app opens on
+      the Dashboard. The rules only accept the role that matches the email
+      domain, so nobody can sign up as staff with a student email.
+- [ ] **Testing other roles:** the stored role always wins. In the console
+      open Firestore -> `users` -> a user's document and change `role`
+      between `student` and `staff`; the app switches to that role's screens
+      straight away (no log out needed). The client can never change its
+      own role; the rules reject it.
 
 ### 6. Sample data
 
@@ -228,7 +238,8 @@ No service-account keys, private keys or passwords are in the repository.
 
 - Free-text search runs on the device over the 200 newest matching reports.
 - Filters are one category and one status at a time.
-- Staff are promoted by hand in the console.
+- The starting role comes from the email domain; any other role change is
+  made by hand in the console.
 - An anonymous report hides the name, but its opaque `reporterId` is still
   readable, so two anonymous reports by one person can be linked.
 - Rejection requires a reason in the app only; the rules accept an empty

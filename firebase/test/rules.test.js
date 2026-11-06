@@ -161,6 +161,16 @@ describe('users/{uid}', () => {
     );
   });
 
+  it('gives @alueducation.com accounts the staff role, and only that', async () => {
+    const staffProfile = (role) => ({ ...profile(role), email: STAFF.email });
+    await assertFails(
+      setDoc(doc(db(as(STAFF)), 'users', STAFF.uid), staffProfile('student')),
+    );
+    await assertSucceeds(
+      setDoc(doc(db(as(STAFF)), 'users', STAFF.uid), staffProfile('staff')),
+    );
+  });
+
   it("prevents creating someone else's profile", async () => {
     await assertFails(
       setDoc(doc(db(as(OTHER)), 'users', STUDENT.uid), profile()),
@@ -173,6 +183,9 @@ describe('users/{uid}', () => {
     it('prevents changing your role on update', async () => {
       await assertFails(
         updateDoc(doc(db(as(STUDENT)), 'users', STUDENT.uid), { role: 'staff' }),
+      );
+      await assertFails(
+        updateDoc(doc(db(as(STAFF)), 'users', STAFF.uid), { role: 'student' }),
       );
     });
 

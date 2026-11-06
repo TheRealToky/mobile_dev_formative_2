@@ -51,25 +51,25 @@ const _profile = ShellDestination(
 
 /// Scaffold with the bottom navigation bar shared by the signed-in screens.
 ///
-/// The Dashboard tab is only listed when [showStaffTab] is true. Hiding it is
-/// a usability measure; the router guard and Security Rules do the real
-/// enforcement.
+/// Tabs depend on the role:
+/// - students: Feed, Report, Profile;
+/// - staff ([isStaff]): Dashboard, Feed, Profile.
+///
+/// Hiding tabs is a usability measure; the router guard and Security Rules
+/// do the real enforcement.
 class AppShell extends StatelessWidget {
   const AppShell({
     super.key,
     required this.navigationShell,
-    required this.showStaffTab,
+    required this.isStaff,
   });
 
   final StatefulNavigationShell navigationShell;
-  final bool showStaffTab;
+  final bool isStaff;
 
-  List<ShellDestination> get _destinations => [
-    _feed,
-    _report,
-    if (showStaffTab) _staff,
-    _profile,
-  ];
+  List<ShellDestination> get _destinations => isStaff
+      ? const [_staff, _feed, _profile]
+      : const [_feed, _report, _profile];
 
   @override
   Widget build(BuildContext context) {

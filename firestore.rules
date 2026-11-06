@@ -27,7 +27,15 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(uid);
     }
 
-    // Role comes from users/{uid}.role, which clients cannot set to 'staff'.
+    // Starting role for a new profile, from the email domain. Mirror of
+    // staffEmailDomains / UserRole.forEmail in the app.
+    function roleForEmail(email) {
+      return email.lower().matches('^[^@]+@(alueducation[.]com|alueducation[.]si[.]com)$')
+        ? 'staff' : 'student';
+    }
+
+    // Role comes from users/{uid}.role. Clients only choose it at creation,
+    // and only the one their email domain gives them.
     function isStaff() {
       return verified()
         && exists(userDoc(request.auth.uid))
@@ -87,20 +95,22 @@ service cloud.firestore {
       // does not reveal an anonymous reporter's name.
       allow read: if verified() && (request.auth.uid == uid || isStaff());
 
-      // Only your own document, and only ever as a student.
+      // Only your own document, with the role your email domain gives you
+      // (staff for @alueducation.com, student for @alustudent.com).
       allow create: if verified()
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(
              ['displayName', 'email', 'role', 'createdAt'])
-        && request.resource.data.role == 'student'
+        && request.resource.data.role == roleForEmail(request.auth.token.email)
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() <= 50
         && request.resource.data.createdAt == request.time;
 
-      // You may change your name, never your role or email. Staff promotion
-      // is done by an administrator in the Console or with the Admin SDK,
-      // which bypasses these rules.
+      // You may change your name, never your role or email. Changing a role
+      // later (for example student -> staff for testing) is done by an
+      // administrator in the Console or with the Admin SDK, which bypasses
+      // these rules; the app follows the stored value.
       allow update: if verified()
         && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys()

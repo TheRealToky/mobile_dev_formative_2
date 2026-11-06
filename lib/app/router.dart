@@ -21,13 +21,24 @@ import 'routes.dart';
 ///
 /// It is created once; when [sessionProvider] changes (sign in, verify,
 /// sign out, role loaded) the `refreshListenable` re-runs [redirectFor],
-/// which moves the user to the right screen.
+/// which moves the user to the right screen. When the role itself changes
+/// while signed in (edited in the Firestore console), the user is taken to
+/// the new role's home screen.
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
-  ref.listen(sessionProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
-  return GoRouter(
+  late final GoRouter router;
+  ref.listen(sessionProvider, (previous, next) {
+    refresh.value++;
+    if (previous is SessionReady &&
+        next is SessionReady &&
+        previous.isStaff != next.isStaff) {
+      router.go(homeFor(isStaff: next.isStaff));
+    }
+  });
+
+  return router = GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: refresh,
     redirect: (context, state) =>
@@ -66,7 +77,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) => Consumer(
           builder: (context, ref, _) => AppShell(
             navigationShell: navigationShell,
-            showStaffTab: ref.watch(isStaffProvider),
+            isStaff: ref.watch(isStaffProvider),
           ),
         ),
         branches: [

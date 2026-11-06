@@ -1,9 +1,15 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/constants.dart';
+
 import 'firestore_converters.dart';
 
-/// Role stored in `users/{uid}.role`. Only `student` can be written by the
-/// client; `staff` is set by an administrator (Console or Admin SDK).
+/// Role stored in `users/{uid}.role`.
+///
+/// Set once when the profile is created, from the email domain
+/// ([UserRole.forEmail]); the rules only accept that role. After that the
+/// client can never change it; an administrator can (Firestore console or
+/// Admin SDK), and the app follows the stored value.
 enum UserRole {
   student('student', 'Student'),
   staff('staff', 'Staff');
@@ -16,6 +22,15 @@ enum UserRole {
   /// Unknown or missing roles are treated as the least privileged one.
   static UserRole fromValue(Object? value) =>
       value == UserRole.staff.value ? UserRole.staff : UserRole.student;
+
+  /// Starting role for a new account: staff for [staffEmailDomains]
+  /// (`@alueducation.com`), student otherwise (`@alustudent.com`).
+  static UserRole forEmail(String email) {
+    final domain = email.trim().toLowerCase().split('@').last;
+    return staffEmailDomains.contains(domain)
+        ? UserRole.staff
+        : UserRole.student;
+  }
 }
 
 /// Profile document at `users/{uid}`.

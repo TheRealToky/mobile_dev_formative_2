@@ -104,6 +104,14 @@ void main() {
       expect(AppUser.fromMap('u', {'role': 'admin'}).role, UserRole.student);
       expect(AppUser.fromMap('u', {}).role, UserRole.student);
     });
+
+    test('forEmail gives staff domains the staff role', () {
+      expect(UserRole.forEmail('sam@alueducation.com'), UserRole.staff);
+      expect(UserRole.forEmail(' Sam@ALUEducation.com '), UserRole.staff);
+      expect(UserRole.forEmail('sam@alueducation.si.com'), UserRole.staff);
+      expect(UserRole.forEmail('ada@alustudent.com'), UserRole.student);
+      expect(UserRole.forEmail('eve@gmail.com'), UserRole.student);
+    });
   });
 
   group('StatusEvent', () {
