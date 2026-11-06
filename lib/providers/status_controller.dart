@@ -16,7 +16,8 @@ typedef StatusUpdateResult = ({IncidentStatus status, bool queuedOffline});
 /// The incident update and its `statusHistory` entry are written in one
 /// batch by [IncidentRepository.updateStatus], so the history can never
 /// disagree with the status. The transition is checked here against
-/// [IncidentStatus.allowedNext] and again by the Security Rules.
+/// [IncidentStatus.canMoveTo] (any other status, in either direction) and
+/// again by the Security Rules.
 class StatusController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
@@ -39,8 +40,7 @@ class StatusController extends AsyncNotifier<void> {
       }
       if (!incident.status.canMoveTo(to)) {
         throw UserFacingException(
-          'A report that is ${incident.status.label.toLowerCase()} '
-          'cannot move to ${to.label.toLowerCase()}.',
+          'This report is already ${to.label.toLowerCase()}.',
         );
       }
 

@@ -24,8 +24,9 @@ Future<StatusUpdateResult?> showStatusUpdateSheet(
   builder: (_) => StatusUpdateSheet(incident: incident),
 );
 
-/// Lets staff move an incident to one of its allowed next statuses, with a
-/// note the reporter will see in the timeline.
+/// Lets staff move an incident to any other status, forwards or backwards
+/// (for example reopen a resolved report), with a note the reporter will see
+/// in the timeline.
 class StatusUpdateSheet extends ConsumerStatefulWidget {
   const StatusUpdateSheet({super.key, required this.incident});
 
@@ -39,10 +40,10 @@ class _StatusUpdateSheetState extends ConsumerState<StatusUpdateSheet> {
   final _formKey = GlobalKey<FormState>();
   final _note = TextEditingController();
 
-  /// Only the lifecycle's allowed next steps are offered, so an invalid
-  /// transition cannot even be chosen.
+  /// Every status except the current one; the usual next step (or
+  /// "submitted" for a closed report) is pre-selected.
   late final List<IncidentStatus> _options = widget.incident.status.allowedNext;
-  late IncidentStatus _selected = _options.first;
+  late IncidentStatus _selected = widget.incident.status.suggestedNext;
 
   @override
   void dispose() {
@@ -64,6 +65,9 @@ class _StatusUpdateSheetState extends ConsumerState<StatusUpdateSheet> {
     final busy = state.isLoading;
     final theme = Theme.of(context);
     final rejecting = _selected == IncidentStatus.rejected;
+    final from = widget.incident.status;
+    final reopening = from.isClosed && _selected.isOpen;
+    final movingBack = _selected.isBackwardFrom(from);
 
     return Padding(
       // Keep the note field above the keyboard.
@@ -114,6 +118,30 @@ class _StatusUpdateSheetState extends ConsumerState<StatusUpdateSheet> {
                     ),
                 ],
               ),
+              if (movingBack) ...[
+                const SizedBox(height: Gap.sm),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.undo,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: Gap.xs),
+                    Expanded(
+                      child: Text(
+                        reopening
+                            ? 'This reopens the report and puts it back in '
+                                  'the open queue.'
+                            : 'This moves the report back a step.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: Gap.lg),
               TextFormField(
                 controller: _note,
@@ -131,6 +159,8 @@ class _StatusUpdateSheetState extends ConsumerState<StatusUpdateSheet> {
                       : 'Note (optional)',
                   hintText: rejecting
                       ? 'For example: duplicate of an earlier report'
+                      : reopening
+                      ? 'For example: the tap is leaking again'
                       : 'For example: plumber booked for Monday',
                   helperText: 'The reporter sees this in the status history.',
                 ),
@@ -146,7 +176,9 @@ class _StatusUpdateSheetState extends ConsumerState<StatusUpdateSheet> {
               ],
               const SizedBox(height: Gap.lg),
               LoadingButton(
-                label: 'Move to ${_selected.label.toLowerCase()}',
+                label: reopening
+                    ? 'Reopen as ${_selected.label.toLowerCase()}'
+                    : 'Move to ${_selected.label.toLowerCase()}',
                 isLoading: busy,
                 onPressed: _save,
               ),

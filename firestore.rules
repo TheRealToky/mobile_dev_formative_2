@@ -55,11 +55,11 @@ service cloud.firestore {
                    'rejected'];
     }
 
-    // Mirror of IncidentStatus.allowedNext in the app.
+    // Mirror of IncidentStatus.allowedNext in the app: staff may move a
+    // report between any two statuses, in both directions (for example
+    // reopen a resolved report as submitted), but never to the same one.
     function validTransition(from, to) {
-      return (from == 'submitted' && to == 'under_review')
-        || (from == 'under_review' && to in ['in_progress', 'rejected'])
-        || (from == 'in_progress' && to == 'resolved');
+      return validStatus(from) && validStatus(to) && from != to;
     }
 
     // Shape and limits of an incident document.
@@ -151,8 +151,9 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time;
       }
 
-      // Staff status changes: only status + updatedAt, only along the
-      // lifecycle. The matching history entry is checked below.
+      // Staff status changes: only status + updatedAt, to any other valid
+      // status (forwards or backwards). The matching history entry is
+      // checked below.
       function isStaffStatusChange() {
         return isStaff()
           && request.resource.data.diff(resource.data).affectedKeys()

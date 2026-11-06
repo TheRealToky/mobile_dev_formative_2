@@ -98,15 +98,15 @@ void main() {
     verifyZeroInteractions(repo);
   });
 
-  test('transitions outside the lifecycle are refused', () async {
+  test('moving to the same status is refused', () async {
     final c = await makeContainer(UserRole.staff);
     final result = await c
         .read(statusControllerProvider.notifier)
-        .updateStatus(buildIncident(), IncidentStatus.resolved);
+        .updateStatus(buildIncident(), IncidentStatus.submitted);
     expect(result, isNull);
     expect(
       friendlyError(c.read(statusControllerProvider).error!),
-      contains('cannot move to resolved'),
+      contains('already submitted'),
     );
     verifyZeroInteractions(repo);
   });

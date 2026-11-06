@@ -11,7 +11,8 @@ Leadership University.
   while it is still "Submitted".
 - **Staff** see a dashboard with counts per status and the open queue (oldest
   first), and move reports through the lifecycle with a note the reporter
-  sees.
+  sees. Moves work in both directions: a resolved report can be reopened as
+  submitted (or any other status), and a submitted one closed directly.
 - The role comes from the email: `@alustudent.com` accounts start as
   students (Feed, Report, Profile), `@alueducation.com` accounts start as
   staff and land on the Dashboard (Dashboard, Feed, Profile).
@@ -20,6 +21,10 @@ Leadership University.
 submitted -> under review -> in progress -> resolved
                   \-> rejected (a reason is required)
 ```
+
+That is the usual path; staff can move a report from any status to any
+other, backwards included. Once a report is back at "submitted" its
+reporter can edit it again.
 
 Built with Flutter, Riverpod 3, go_router and Firebase (Authentication,
 Cloud Firestore). Runs entirely on the free **Spark** plan: photos are stored
@@ -164,7 +169,7 @@ With coverage (writes `coverage/lcov.info`, git-ignored):
 flutter test --coverage
 ```
 
-Security Rules tests against the local emulator (38 tests). Run once:
+Security Rules tests against the local emulator (40 tests). Run once:
 `npm --prefix firebase install`. Then:
 
 ```bash

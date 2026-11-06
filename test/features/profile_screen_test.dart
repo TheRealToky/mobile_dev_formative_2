@@ -85,7 +85,8 @@ void main() {
     expect(
       find.descendant(of: find.byType(RoleBadge), matching: find.text('Staff')),
       findsOneWidget,
-    );    // Staff do not file reports, so there is no "My reports" section.
+    );
+    // Staff do not file reports, so there is no "My reports" section.
     expect(find.text('My reports'), findsNothing);
   });
 

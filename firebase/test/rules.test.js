@@ -312,10 +312,36 @@ describe('incidents: staff status updates', () => {
     );
   });
 
-  it('rejects transitions outside the lifecycle', async () => {
+  it('allows moves in both directions', async () => {
+    await seed();
+    await assertSucceeds(
+      statusBatch(as(STAFF), STAFF, 'submitted', 'resolved').commit(),
+    );
+    await assertSucceeds(
+      statusBatch(as(STAFF), STAFF, 'resolved', 'submitted', 'Leaking again').commit(),
+    );
+  });
+
+  it('rejects staying put and unknown statuses', async () => {
     await seed();
     await assertFails(
-      statusBatch(as(STAFF), STAFF, 'submitted', 'resolved').commit(),
+      statusBatch(as(STAFF), STAFF, 'submitted', 'submitted').commit(),
+    );
+    await assertFails(
+      statusBatch(as(STAFF), STAFF, 'submitted', 'closed').commit(),
+    );
+  });
+
+  it('lets the reporter edit again once reopened as submitted', async () => {
+    await seed({ status: 'resolved' });
+    await assertSucceeds(
+      statusBatch(as(STAFF), STAFF, 'resolved', 'submitted').commit(),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db(as(STUDENT)), 'incidents', 'inc1'), {
+        title: 'Leaking tap again',
+        updatedAt: serverTimestamp(),
+      }),
     );
   });
 

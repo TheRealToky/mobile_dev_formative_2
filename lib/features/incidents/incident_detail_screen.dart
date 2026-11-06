@@ -95,7 +95,8 @@ class IncidentDetailScreen extends ConsumerWidget {
         },
       ),
       // Staff action, kept in reach at the bottom while reading the report.
-      bottomNavigationBar: isStaff && incident != null && incident.status.isOpen
+      // Shown for every status: closed reports can be reopened.
+      bottomNavigationBar: isStaff && incident != null
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(

@@ -131,7 +131,9 @@ void main() {
   });
 
   group('status update sheet', () {
-    testWidgets('offers only the allowed next statuses', (tester) async {
+    testWidgets('offers every other status, with the next step selected', (
+      tester,
+    ) async {
       await pumpApp(
         tester,
         Scaffold(
@@ -141,10 +143,43 @@ void main() {
         ),
         role: UserRole.staff,
       );
-      expect(find.widgetWithText(ChoiceChip, 'In progress'), findsOneWidget);
-      expect(find.widgetWithText(ChoiceChip, 'Rejected'), findsOneWidget);
-      expect(find.widgetWithText(ChoiceChip, 'Resolved'), findsNothing);
-      expect(find.widgetWithText(ChoiceChip, 'Submitted'), findsNothing);
+      for (final label in [
+        'Submitted',
+        'In progress',
+        'Resolved',
+        'Rejected',
+      ]) {
+        expect(find.widgetWithText(ChoiceChip, label), findsOneWidget);
+      }
+      expect(find.widgetWithText(ChoiceChip, 'Under review'), findsNothing);
+      expect(find.text('Move to in progress'), findsOneWidget);
+
+      // Going back a step is allowed and flagged.
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Submitted'));
+      await tester.pumpAndSettle();
+      expect(find.text('This moves the report back a step.'), findsOneWidget);
+      expect(find.text('Move to submitted'), findsOneWidget);
+    });
+
+    testWidgets('a resolved report can be reopened as submitted', (
+      tester,
+    ) async {
+      await pumpApp(
+        tester,
+        Scaffold(
+          body: StatusUpdateSheet(
+            incident: buildIncident(status: IncidentStatus.resolved),
+          ),
+        ),
+        role: UserRole.staff,
+      );
+      expect(find.text('Reopen as submitted'), findsOneWidget);
+      expect(
+        find.text(
+          'This reopens the report and puts it back in the open queue.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('rejecting requires a reason', (tester) async {
@@ -199,7 +234,9 @@ void main() {
       expect(find.text('Update status'), findsNothing);
     });
 
-    testWidgets('hidden once the report is final', (tester) async {
+    testWidgets('still shown once resolved, so staff can reopen it', (
+      tester,
+    ) async {
       await pumpApp(
         tester,
         const IncidentDetailScreen(incidentId: 'inc1'),
@@ -209,7 +246,7 @@ void main() {
           reporterProfileProvider('uid1').overrideWith((ref) async => null),
         ],
       );
-      expect(find.text('Update status'), findsNothing);
+      expect(find.text('Update status'), findsOneWidget);
     });
   });
 }
