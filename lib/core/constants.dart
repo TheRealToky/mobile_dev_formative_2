@@ -7,7 +7,11 @@ library;
 /// Mirrored in `firestore.rules` and `storage.rules` (`allowedEmail()`).
 /// The domain only grants access; the role always comes from
 /// `users/{uid}.role`.
-const List<String> allowedEmailDomains = ['alustudent.com', 'alueducation.com'];
+const List<String> allowedEmailDomains = [
+  'alustudent.com',
+  'alueducation.com',
+  'alueducation.si.com',
+];
 
 /// Campus buildings offered in the report form.
 ///

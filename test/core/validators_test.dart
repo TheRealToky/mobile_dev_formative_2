@@ -6,6 +6,7 @@ void main() {
     test('accepts both ALU domains, case-insensitive and trimmed', () {
       expect(Validators.isAllowedEmail('a.b@alustudent.com'), isTrue);
       expect(Validators.isAllowedEmail('staff@alueducation.com'), isTrue);
+      expect(Validators.isAllowedEmail('staff@alueducation.si.com'), isTrue);
       expect(Validators.isAllowedEmail('  A.B@ALUStudent.COM '), isTrue);
     });
 

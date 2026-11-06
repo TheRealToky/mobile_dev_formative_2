@@ -46,7 +46,7 @@ void main() {
 
       expect(
         find.text(
-          'Use your ALU email (ending in @alustudent.com or @alueducation.com).',
+          'Use your ALU email (ending in @alustudent.com or @alueducation.com or @alueducation.si.com).',
         ),
         findsOneWidget,
       );

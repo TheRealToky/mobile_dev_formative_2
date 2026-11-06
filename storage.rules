@@ -21,7 +21,7 @@ service firebase.storage {
       return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email.lower()
-             .matches('^[^@]+@(alustudent[.]com|alueducation[.]com)$');
+             .matches('^[^@]+@(alustudent[.]com|alueducation[.]com|alueducation[.]si[.]com)$');
     }
 
     function incidentPath(incidentId) {
