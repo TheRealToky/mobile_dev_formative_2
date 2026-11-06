@@ -1,5 +1,5 @@
 // Security Rules tests. Run from the project root with:
-//   firebase emulators:exec --only firestore,storage "npm --prefix firebase test"
+//   firebase emulators:exec --only firestore "npm --prefix firebase test"
 import { readFileSync } from 'node:fs';
 import {
   assertFails,
@@ -15,8 +15,8 @@ import {
   updateDoc,
   writeBatch,
   collection,
+  Bytes,
 } from 'firebase/firestore';
-import { ref, uploadBytes } from 'firebase/storage';
 
 const PROJECT_ID = 'demo-campus-reports';
 
@@ -96,13 +96,11 @@ before(async () => {
   env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: { rules: readFileSync('../firestore.rules', 'utf8') },
-    storage: { rules: readFileSync('../storage.rules', 'utf8') },
   });
 });
 
 beforeEach(async () => {
   await env.clearFirestore();
-  await env.clearStorage();
 });
 
 after(async () => {
@@ -370,64 +368,91 @@ describe('incidents: staff status updates', () => {
   });
 });
 
-// ---------- Storage ----------
+// ---------- Photos (Firestore) ----------
 
-describe('storage: incident photos', () => {
-  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+describe('incident photos', () => {
+  const jpeg = Bytes.fromUint8Array(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]));
 
-  function upload(ctx, path, { contentType = 'image/jpeg', ownerUid, bytes = jpeg } = {}) {
-    const meta = { contentType };
-    if (ownerUid) meta.customMetadata = { ownerUid };
-    return uploadBytes(ref(ctx.storage(), path), bytes, meta);
+  function photo(overrides = {}) {
+    return {
+      data: jpeg,
+      ownerUid: STUDENT.uid,
+      contentType: 'image/jpeg',
+      createdAt: serverTimestamp(),
+      ...overrides,
+    };
   }
 
-  it('lets a verified user upload a photo for a new incident', async () => {
-    await assertSucceeds(
-      upload(as(STUDENT), 'incident_photos/new1/a.jpg', { ownerUid: STUDENT.uid }),
+  const photoRef = (ctx, incidentId, id = 'p1') =>
+    doc(db(ctx), 'incidents', incidentId, 'photos', id);
+
+  it('lets a verified user add a photo for a new incident', async () => {
+    await assertSucceeds(setDoc(photoRef(as(STUDENT), 'new1'), photo()));
+  });
+
+  it('requires the photo to be tagged with the uploader', async () => {
+    await assertFails(
+      setDoc(photoRef(as(STUDENT), 'new1'), photo({ ownerUid: OTHER.uid })),
     );
   });
 
-  it('requires the file to be tagged with the uploader', async () => {
-    await assertFails(upload(as(STUDENT), 'incident_photos/new1/a.jpg'));
+  it('accepts JPEG bytes only, up to 700 KB', async () => {
     await assertFails(
-      upload(as(STUDENT), 'incident_photos/new1/a.jpg', { ownerUid: OTHER.uid }),
+      setDoc(photoRef(as(STUDENT), 'new1'), photo({ data: 'not bytes' })),
+    );
+    await assertFails(
+      setDoc(photoRef(as(STUDENT), 'new1'), photo({ contentType: 'image/png' })),
+    );
+    await assertFails(
+      setDoc(photoRef(as(STUDENT), 'new1'), photo({
+        data: Bytes.fromUint8Array(new Uint8Array(700 * 1024 + 1)),
+      })),
+    );
+    await assertFails(
+      setDoc(photoRef(as(STUDENT), 'new1'), photo({ extra: true })),
     );
   });
 
-  it('accepts images only, under 5 MB', async () => {
-    await assertFails(
-      upload(as(STUDENT), 'incident_photos/new1/a.pdf', {
-        ownerUid: STUDENT.uid, contentType: 'application/pdf',
-      }),
-    );
-    await assertFails(
-      upload(as(STUDENT), 'incident_photos/new1/big.jpg', {
-        ownerUid: STUDENT.uid, bytes: new Uint8Array(5 * 1024 * 1024 + 1),
-      }),
-    );
-  });
-
-  it("blocks uploads into someone else's existing incident", async () => {
+  it("blocks photos on someone else's existing incident", async () => {
     await seed();
     await assertFails(
-      upload(as(OTHER), 'incident_photos/inc1/x.jpg', { ownerUid: OTHER.uid }),
+      setDoc(photoRef(as(OTHER), 'inc1'), photo({ ownerUid: OTHER.uid })),
     );
+    await assertSucceeds(setDoc(photoRef(as(STUDENT), 'inc1'), photo()));
+  });
+
+  it('blocks reporter changes once staff started, but not staff', async () => {
+    await seed({ status: 'under_review' });
+    await assertFails(setDoc(photoRef(as(STUDENT), 'inc1'), photo()));
     await assertSucceeds(
-      upload(as(STUDENT), 'incident_photos/inc1/y.jpg', { ownerUid: STUDENT.uid }),
+      setDoc(photoRef(as(STAFF), 'inc1'), photo({ ownerUid: STAFF.uid })),
     );
   });
 
-  it('denies unverified users', async () => {
+  it('never allows replacing a photo', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'incidents', 'new1', 'photos', 'p1'), {
+        ...photo(), createdAt: new Date(),
+      }));
     await assertFails(
-      upload(as(STUDENT, { verified: false }), 'incident_photos/new1/a.jpg', {
-        ownerUid: STUDENT.uid,
-      }),
+      updateDoc(photoRef(as(STUDENT), 'new1'), { contentType: 'image/jpeg' }),
     );
   });
 
-  it('allows no other paths', async () => {
+  it('lets the uploader or staff delete, nobody else', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'incidents', 'new1', 'photos', 'p1'), {
+        ...photo(), createdAt: new Date(),
+      }));
+    await assertFails(deleteDoc(photoRef(as(OTHER), 'new1')));
+    await assertSucceeds(deleteDoc(photoRef(as(STUDENT), 'new1')));
+  });
+
+  it('lets any verified user read photos; denies unverified users', async () => {
+    await assertSucceeds(getDoc(photoRef(as(OTHER), 'new1')));
+    await assertFails(getDoc(photoRef(as(STUDENT, { verified: false }), 'new1')));
     await assertFails(
-      upload(as(STUDENT), 'avatars/a.jpg', { ownerUid: STUDENT.uid }),
+      setDoc(photoRef(as(STUDENT, { verified: false }), 'new1'), photo()),
     );
   });
 });

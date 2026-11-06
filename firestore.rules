@@ -7,8 +7,9 @@ rules_version = '2';
 // anything these rules do not allow.
 //
 // Values mirrored from lib/core/constants.dart and lib/data/models/:
-//   allowed email domains, field limits, category/status enums, and the
-//   status lifecycle (IncidentStatus.allowedNext).
+//   allowed email domains, field limits (including the photo size cap),
+//   category/status enums, and the status lifecycle
+//   (IncidentStatus.allowedNext).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -168,6 +169,55 @@ service cloud.firestore {
         || (verified()
             && resource.data.reporterId == request.auth.uid
             && resource.data.status == 'submitted');
+
+      // ---------- incidents/{incidentId}/photos/{photoId} ----------
+      //
+      // Photos are stored in Firestore (Bytes field) so the project stays on
+      // the free Spark plan. They are written BEFORE the incident document
+      // (so the document only ever references photos that exist), so at
+      // write time there may be no incident to check ownership against:
+      //   1. every photo records ownerUid == the uploader's uid, and
+      //   2. adding to an EXISTING incident is only allowed for its reporter
+      //      (while 'submitted') or staff.
+      // Trade-off: any verified user can add a photo under an incident id
+      // that does not exist yet. It is tagged with their uid, cannot replace
+      // anyone else's photo, and is never shown unless an incident they own
+      // references it.
+      match /photos/{photoId} {
+        function incidentPath() {
+          return /databases/$(database)/documents/incidents/$(incidentId);
+        }
+
+        // New incident (no document yet), or the caller's own incident that
+        // staff have not started on.
+        function reporterMayChange() {
+          return !exists(incidentPath())
+            || (get(incidentPath()).data.reporterId == request.auth.uid
+                && get(incidentPath()).data.status == 'submitted');
+        }
+
+        allow read: if verified();
+
+        // JPEG under 700 KB (Limits.maxPhotoBytes), tagged with the uploader.
+        allow create: if verified()
+          && request.resource.data.keys().hasOnly(
+               ['data', 'ownerUid', 'contentType', 'createdAt'])
+          && request.resource.data.data is bytes
+          && request.resource.data.data.size() <= 700 * 1024
+          && request.resource.data.contentType == 'image/jpeg'
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && (reporterMayChange() || isStaff());
+
+        allow update: if false;
+
+        // The uploader (while the report is still editable, or after it was
+        // deleted, for cleanup) or staff.
+        allow delete: if verified()
+          && ((resource.data.ownerUid == request.auth.uid
+               && reporterMayChange())
+              || isStaff());
+      }
 
       // ---------- incidents/{incidentId}/statusHistory/{eventId} ----------
 

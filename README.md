@@ -22,8 +22,9 @@ submitted -> under review -> in progress -> resolved
 ```
 
 Built with Flutter, Riverpod 3, go_router and Firebase (Authentication,
-Cloud Firestore, Cloud Storage). Access control is enforced by Firestore and
-Storage Security Rules, not only by the UI. Target platform: **Android**.
+Cloud Firestore). Runs entirely on the free **Spark** plan: photos are stored
+in Firestore, not Cloud Storage. Access control is enforced by Firestore
+Security Rules, not only by the UI. Target platform: **Android**.
 
 ## Contents
 
@@ -56,8 +57,10 @@ Key points:
   status change appears on the reporter's phone without a refresh.
 - A status change and its `statusHistory` entry are written in **one batch**,
   and the rules check both halves (`get` / `getAfter`).
-- Photos are resized and stripped of EXIF (including GPS) before upload, and
-  uploaded photos are deleted again if the report fails to save.
+- Photos are compressed to a JPEG under 700 KB (stepping down size and
+  quality until it fits a Firestore document) and stripped of EXIF
+  (including GPS). Each one is saved as a document in
+  `incidents/{id}/photos`, and deleted again if the report fails to save.
 
 ## Setup checklist
 
@@ -99,12 +102,9 @@ setx JAVA_TOOL_OPTIONS "-Djdk.net.unixdomain.tmpdir=C:\Temp"
 - [ ] Firestore Database -> Create database if it does not exist yet
       (production mode; pick a region close to Kigali, for example
       `europe-west1`. The region cannot be changed later).
-- [ ] **Storage (photos):** new projects can only create a Cloud Storage
-      bucket on the **Blaze** plan. Upgrade (Console -> Usage and billing),
-      set a budget alert (for example 1 USD; the free quota is 5 GB stored and
-      1 GB/day downloaded), then Storage -> Get started. Without this the app
-      works, but reports with photos fail with "Photo uploads are not
-      available".
+- Nothing else: photos live in Firestore, so no Cloud Storage bucket,
+  Blaze plan or payment card is needed. The Spark quota (1 GiB stored,
+  50k reads/day) holds a few thousand compressed photos.
 
 ### 3. Deploy rules and indexes
 
@@ -114,11 +114,7 @@ From the project root:
 firebase deploy --only firestore:rules,firestore:indexes --project mobile-dev-formative-2-1349f
 ```
 
-```bash
-firebase deploy --only storage --project mobile-dev-formative-2-1349f
-```
-
-The second command needs the Storage bucket from step 2. Index builds take a
+Index builds take a
 few minutes; until they finish, filtered feeds and "My reports" show an
 error with a retry button.
 
@@ -168,11 +164,11 @@ With coverage (writes `coverage/lcov.info`, git-ignored):
 flutter test --coverage
 ```
 
-Security Rules tests against the local emulators (35 tests). Run once:
+Security Rules tests against the local emulator (38 tests). Run once:
 `npm --prefix firebase install`. Then:
 
 ```bash
-firebase emulators:exec --project demo-campus-reports --only firestore,storage "npm --prefix firebase test"
+firebase emulators:exec --project demo-campus-reports --only firestore "npm --prefix firebase test"
 ```
 
 The `WARNING ... PERMISSION_DENIED` stack traces in that output are the
@@ -204,7 +200,7 @@ lib/
   core/                     constants, validators, errors, utils (search, snack)
   data/
     models/                 Incident, AppUser, StatusEvent, ReportDraft, enums
-    repositories/           auth, user, incident, storage (+ Firestore errors)
+    repositories/           auth, user, incident, photo (+ Firestore errors)
     services/               photo picking and compression
   providers/                auth/session, incidents, filters, report and
                             status controllers, dashboard, theme
@@ -218,7 +214,7 @@ lib/
 test/                       unit, widget and provider tests
 integration_test/           end-to-end flows
 firebase/test/              Security Rules tests (mocha + rules-unit-testing)
-firestore.rules, storage.rules, firestore.indexes.json, firebase.json
+firestore.rules, firestore.indexes.json, firebase.json
 ```
 
 ## Files that contain Firebase config
@@ -245,7 +241,9 @@ No service-account keys, private keys or passwords are in the repository.
 - Rejection requires a reason in the app only; the rules accept an empty
   note.
 - The theme choice (System / Light / Dark) resets on restart.
-- Photos need the Blaze plan (see step 2).
+- Photos are capped at 700 KB each (Firestore's 1 MiB document limit), so
+  they are smaller than the camera original. Every view of a photo is a
+  Firestore read, which counts against the Spark plan's daily read quota.
 
 The full list, with reasons, is in `REPORT_ASSETS.md`.
 

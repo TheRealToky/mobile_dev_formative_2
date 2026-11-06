@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app/theme.dart';
 import '../core/constants.dart';
 import '../data/models/report_draft.dart';
+import 'incident_photo.dart';
 
 /// Up to [max] photo thumbnails with a remove button each, plus an add tile
 /// that asks for camera or gallery.
@@ -125,12 +126,7 @@ class _Thumbnail extends StatelessWidget {
         fit: BoxFit.cover,
         cacheWidth: 300,
       ),
-      RemotePhoto(:final url) => Image.network(
-        url,
-        fit: BoxFit.cover,
-        cacheWidth: 300,
-        errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
-      ),
+      RemotePhoto(:final url) => IncidentPhoto(photoRef: url, cacheWidth: 300),
     };
 
     return Stack(
