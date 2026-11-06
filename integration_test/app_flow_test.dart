@@ -19,19 +19,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mobile_dev_formative_2/app/app.dart';
-import 'package:mobile_dev_formative_2/data/repositories/storage_repository.dart';
 import 'package:mobile_dev_formative_2/features/staff/status_update_sheet.dart';
 import 'package:mobile_dev_formative_2/providers/firebase_providers.dart';
-import 'package:mobile_dev_formative_2/providers/report_controller.dart';
 import 'package:mobile_dev_formative_2/providers/retry_policy.dart';
 import 'package:mobile_dev_formative_2/widgets/incident_card.dart';
-
-/// Photo-free flows never upload; this only satisfies the provider.
-class _NoStorage implements StorageRepository {
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('Storage is not used in these flows');
-}
 
 const _studentUid = 'student1';
 const _staffUid = 'staff1';
@@ -59,7 +50,6 @@ Future<FakeFirebaseFirestore> _pumpApp(
       overrides: [
         firebaseAuthProvider.overrideWithValue(auth),
         firestoreProvider.overrideWithValue(firestore),
-        storageRepositoryProvider.overrideWithValue(_NoStorage()),
       ],
       child: const CampusApp(useGoogleFont: false),
     ),

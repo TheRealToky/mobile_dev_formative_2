@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../widgets/incident_photo.dart';
 
 /// Horizontally swipeable photo strip; tapping a photo opens it full screen.
 class PhotoGallery extends StatelessWidget {
   const PhotoGallery({super.key, required this.urls});
 
+  /// Photo references (see `IncidentPhoto`).
   final List<String> urls;
 
   @override
@@ -34,7 +36,7 @@ class PhotoGallery extends StatelessWidget {
                 borderRadius: BorderRadius.circular(Radii.card),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: _NetworkPhoto(url: urls[i], fit: BoxFit.cover),
+                  child: IncidentPhoto(photoRef: urls[i]),
                 ),
               ),
             ),
@@ -73,36 +75,10 @@ class FullScreenPhotos extends StatelessWidget {
           child: Center(
             child: Hero(
               tag: urls[i],
-              child: _NetworkPhoto(url: urls[i], fit: BoxFit.contain),
+              child: IncidentPhoto(photoRef: urls[i], fit: BoxFit.contain),
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _NetworkPhoto extends StatelessWidget {
-  const _NetworkPhoto({required this.url, required this.fit});
-
-  final String url;
-  final BoxFit fit;
-
-  @override
-  Widget build(BuildContext context) {
-    final muted = Theme.of(context).colorScheme.surfaceContainerHighest;
-    return Image.network(
-      url,
-      fit: fit,
-      loadingBuilder: (context, child, progress) => progress == null
-          ? child
-          : ColoredBox(
-              color: muted,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-      errorBuilder: (_, _, _) => ColoredBox(
-        color: muted,
-        child: const Center(child: Icon(Icons.broken_image_outlined)),
       ),
     );
   }

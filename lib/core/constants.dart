@@ -1,10 +1,10 @@
-/// App-wide constants. Values that also appear in `firestore.rules` and
-/// `storage.rules` are marked; change them in both places.
+/// App-wide constants. Values that also appear in `firestore.rules` are
+/// marked; change them in both places.
 library;
 
 /// Email domains allowed to register and use the app.
 ///
-/// Mirrored in `firestore.rules` and `storage.rules` (`allowedEmail()`).
+/// Mirrored in `firestore.rules` (`verified()`).
 /// The domain only grants access; the role always comes from
 /// `users/{uid}.role`.
 const List<String> allowedEmailDomains = [
@@ -44,14 +44,18 @@ abstract final class Limits {
   /// Photos per incident. Mirrored in `firestore.rules`.
   static const maxPhotos = 3;
 
-  /// Max upload size in bytes (5 MB). Mirrored in `storage.rules`.
-  static const maxPhotoBytes = 5 * 1024 * 1024;
+  /// Max size of one compressed photo in bytes (700 KB). Photos are stored
+  /// as Firestore documents, which are capped at 1 MiB including field
+  /// names, so this leaves headroom. Mirrored in `firestore.rules`.
+  static const maxPhotoBytes = 700 * 1024;
 }
 
-/// Firestore collection and Storage folder names.
+/// Firestore collection names.
 abstract final class Paths {
   static const users = 'users';
   static const incidents = 'incidents';
   static const statusHistory = 'statusHistory';
-  static const incidentPhotos = 'incident_photos';
+
+  /// Subcollection of an incident holding its photos as Bytes fields.
+  static const photos = 'photos';
 }

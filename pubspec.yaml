@@ -39,7 +39,6 @@ dependencies:
   flutter_riverpod: ^3.4.3
   go_router: ^18.1.2
   firebase_auth: ^7.0.1
-  firebase_storage: ^14.0.1
   image_picker: ^1.2.4
   flutter_image_compress: ^2.5.1
   timeago: ^3.7.1

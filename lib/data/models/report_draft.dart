@@ -8,7 +8,7 @@ sealed class DraftPhoto {
   const DraftPhoto();
 }
 
-/// Already in Storage; kept as its download URL.
+/// Already saved; kept as its photo reference (see `PhotoRepository`).
 final class RemotePhoto extends DraftPhoto {
   const RemotePhoto(this.url);
   final String url;

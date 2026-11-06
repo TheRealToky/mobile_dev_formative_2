@@ -47,8 +47,15 @@ class FlutterImageCompressor implements ImageCompressor {
 
   @override
   Future<Uint8List> compressForUpload(String path) async {
-    // Try a normal quality first, then a smaller one if still too large.
-    for (final (width, quality) in const [(1600, 80), (1280, 65)]) {
+    // Start at a size that looks sharp on a phone and step down until the
+    // JPEG fits in a Firestore document. A typical camera photo stops at
+    // the first or second step (roughly 150-400 KB).
+    for (final (width, quality) in const [
+      (1600, 75),
+      (1280, 65),
+      (1024, 55),
+      (800, 45),
+    ]) {
       final bytes = await FlutterImageCompress.compressWithFile(
         path,
         minWidth: width,

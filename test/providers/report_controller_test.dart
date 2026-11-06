@@ -8,7 +8,7 @@ import 'package:mobile_dev_formative_2/data/models/app_user.dart';
 import 'package:mobile_dev_formative_2/data/models/incident.dart';
 import 'package:mobile_dev_formative_2/data/models/report_draft.dart';
 import 'package:mobile_dev_formative_2/data/repositories/incident_repository.dart';
-import 'package:mobile_dev_formative_2/data/repositories/storage_repository.dart';
+import 'package:mobile_dev_formative_2/data/repositories/photo_repository.dart';
 import 'package:mobile_dev_formative_2/data/services/photo_services.dart';
 import 'package:mobile_dev_formative_2/providers/auth_providers.dart';
 import 'package:mobile_dev_formative_2/providers/incident_providers.dart';
@@ -20,7 +20,7 @@ import '../helpers/builders.dart';
 
 class MockIncidentRepository extends Mock implements IncidentRepository {}
 
-class MockStorageRepository extends Mock implements StorageRepository {}
+class MockPhotoRepository extends Mock implements PhotoRepository {}
 
 class MockImageCompressor extends Mock implements ImageCompressor {}
 
@@ -47,7 +47,7 @@ ReportDraft _draft({
 
 void main() {
   late MockIncidentRepository incidents;
-  late MockStorageRepository storage;
+  late MockPhotoRepository storage;
   late MockImageCompressor compressor;
   final bytes = Uint8List.fromList([1, 2, 3]);
 
@@ -58,12 +58,12 @@ void main() {
 
   setUp(() {
     incidents = MockIncidentRepository();
-    storage = MockStorageRepository();
+    storage = MockPhotoRepository();
     compressor = MockImageCompressor();
     when(() => incidents.newIncidentId()).thenReturn('new-id');
     when(() => compressor.compressForUpload(any()))
         .thenAnswer((_) async => bytes);
-    when(() => storage.deleteByUrl(any())).thenAnswer((_) async {});
+    when(() => storage.deletePhoto(any())).thenAnswer((_) async {});
   });
 
   /// Upload stub: returns a URL per local path and reports progress.
@@ -91,7 +91,7 @@ void main() {
       retry: noAutomaticRetry,
       overrides: [
         incidentRepositoryProvider.overrideWithValue(incidents),
-        storageRepositoryProvider.overrideWithValue(storage),
+        photoRepositoryProvider.overrideWithValue(storage),
         imageCompressorProvider.overrideWithValue(compressor),
         reportWriteTimeoutProvider.overrideWithValue(timeout),
         currentUserProfileProvider.overrideWith(
@@ -136,7 +136,7 @@ void main() {
       expect(saved.reporterName, 'Ada');
       expect(progress.whereType<num>(), contains(greaterThan(0)));
       expect(c.read(reportControllerProvider).hasError, isFalse);
-      verifyNever(() => storage.deleteByUrl(any()));
+      verifyNever(() => storage.deletePhoto(any()));
     });
 
     test('anonymous reports are saved without the name', () async {
@@ -169,8 +169,8 @@ void main() {
         c.read(reportControllerProvider).error,
         isA<UserFacingException>(),
       );
-      verify(() => storage.deleteByUrl('https://storage/photo1.jpg')).called(1);
-      verify(() => storage.deleteByUrl('https://storage/photo2.jpg')).called(1);
+      verify(() => storage.deletePhoto('https://storage/photo1.jpg')).called(1);
+      verify(() => storage.deletePhoto('https://storage/photo2.jpg')).called(1);
     });
 
     test('deletes earlier photos when a later upload fails', () async {
@@ -184,7 +184,7 @@ void main() {
           );
 
       expect(result, isNull);
-      verify(() => storage.deleteByUrl('https://storage/photo1.jpg')).called(1);
+      verify(() => storage.deletePhoto('https://storage/photo1.jpg')).called(1);
       verifyNever(() => incidents.createIncident(any()));
     });
 
@@ -200,7 +200,7 @@ void main() {
           .submit(_draft(photos: const [LocalPhoto('/a.jpg')]));
 
       expect(result?.queuedOffline, isTrue);
-      verifyNever(() => storage.deleteByUrl(any()));
+      verifyNever(() => storage.deletePhoto(any()));
     });
   });
 
@@ -236,8 +236,8 @@ void main() {
         'https://storage/photo1.jpg',
       ]);
       expect(saved.status, original.status);
-      verify(() => storage.deleteByUrl('https://old/drop.jpg')).called(1);
-      verifyNever(() => storage.deleteByUrl('https://old/keep.jpg'));
+      verify(() => storage.deletePhoto('https://old/drop.jpg')).called(1);
+      verifyNever(() => storage.deletePhoto('https://old/keep.jpg'));
     });
   });
 
@@ -253,7 +253,7 @@ void main() {
       expect(ok, isTrue);
       verifyInOrder([
         () => incidents.deleteIncident('inc1'),
-        () => storage.deleteByUrl('https://p/1.jpg'),
+        () => storage.deletePhoto('https://p/1.jpg'),
       ]);
     });
 
@@ -267,7 +267,7 @@ void main() {
           .delete(buildIncident(photoUrls: const ['https://p/1.jpg']));
 
       expect(ok, isFalse);
-      verifyNever(() => storage.deleteByUrl(any()));
+      verifyNever(() => storage.deletePhoto(any()));
     });
   });
 }

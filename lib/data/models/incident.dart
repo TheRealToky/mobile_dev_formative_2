@@ -63,6 +63,10 @@ class Incident {
   final IncidentCategory category;
   final IncidentStatus status;
   final IncidentLocation location;
+
+  /// Photo references: Firestore document paths
+  /// (`incidents/{id}/photos/{photoId}`), or `https://` URLs on reports
+  /// made while photos were in Cloud Storage. Shown with `IncidentPhoto`.
   final List<String> photoUrls;
   final String reporterId;
 

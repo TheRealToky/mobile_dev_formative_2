@@ -6,15 +6,18 @@ import '../core/errors.dart';
 import '../data/models/app_user.dart';
 import '../data/models/incident.dart';
 import '../data/models/report_draft.dart';
-import '../data/repositories/storage_repository.dart';
+import '../data/repositories/photo_repository.dart';
 import '../data/services/photo_services.dart';
 import 'auth_providers.dart';
 import 'firebase_providers.dart';
 import 'incident_providers.dart';
 
-/// Uploads and deletes incident photos in Cloud Storage.
-final storageRepositoryProvider = Provider<StorageRepository>(
-  (ref) => FirebaseStorageRepository(ref.watch(storageProvider)),
+/// Saves, loads and deletes incident photos (stored in Firestore).
+final photoRepositoryProvider = Provider<PhotoRepository>(
+  (ref) => FirestorePhotoRepository(
+    ref.watch(firestoreProvider),
+    writeTimeout: ref.watch(reportWriteTimeoutProvider),
+  ),
 );
 
 /// Picks photos from the camera or gallery.
@@ -22,7 +25,8 @@ final photoSourceProvider = Provider<PhotoSource>(
   (ref) => ImagePickerPhotoSource(),
 );
 
-/// Resizes photos and strips EXIF (including GPS) before upload.
+/// Resizes photos to fit a Firestore document and strips EXIF (including
+/// GPS) before upload.
 final imageCompressorProvider = Provider<ImageCompressor>(
   (ref) => const FlutterImageCompressor(),
 );
@@ -121,7 +125,7 @@ class ReportController extends AsyncNotifier<void> {
   Future<bool> delete(Incident incident) async {
     final result = await _run((_) async {
       await ref.read(incidentRepositoryProvider).deleteIncident(incident.id);
-      // The report is gone either way; leftover files are only storage cost.
+      // The report is gone either way; leftover photos are never shown.
       await _deleteQuietly(incident.photoUrls);
       return true;
     });
@@ -141,7 +145,7 @@ class ReportController extends AsyncNotifier<void> {
     var done = 0;
     final urls = <String>[];
     final compressor = ref.read(imageCompressorProvider);
-    final storage = ref.read(storageRepositoryProvider);
+    final storage = ref.read(photoRepositoryProvider);
 
     for (final photo in draft.photos) {
       switch (photo) {
@@ -175,12 +179,12 @@ class ReportController extends AsyncNotifier<void> {
   }
 
   Future<void> _deleteQuietly(Iterable<String> urls) async {
-    final storage = ref.read(storageRepositoryProvider);
+    final storage = ref.read(photoRepositoryProvider);
     for (final url in urls.toList()) {
       try {
-        await storage.deleteByUrl(url);
+        await storage.deletePhoto(url);
       } on Object {
-        // Best effort: an orphaned file is harmless and never shown.
+        // Best effort: an orphaned photo is harmless and never shown.
       }
     }
   }
