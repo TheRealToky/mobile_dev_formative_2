@@ -254,15 +254,3 @@ No service-account keys, private keys or passwords are in the repository.
 - Photos are capped at 700 KB each (Firestore's 1 MiB document limit), so
   they are smaller than the camera original. Every view of a photo is a
   Firestore read, which counts against the Spark plan's daily read quota.
-
-The full list, with reasons, is in `REPORT_ASSETS.md`.
-
-## Other documents
-
-- [`TEST_MATRIX.md`](TEST_MATRIX.md): 10 manual scenarios to run on a phone.
-- [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md): the 7-10 minute demo video, scene by
-  scene.
-- [`REPORT_ASSETS.md`](REPORT_ASSETS.md): material for the technical report,
-  mapped to its sections, including where the code differs from it.
-- [`DESIGN_NOTES.md`](DESIGN_NOTES.md): design tokens, colours, typography.
-- [`PROGRESS.md`](PROGRESS.md): build log, step by step.
