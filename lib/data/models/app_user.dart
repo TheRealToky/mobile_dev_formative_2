@@ -4,12 +4,16 @@ import '../../core/constants.dart';
 
 import 'firestore_converters.dart';
 
-/// Role stored in `users/{uid}.role`.
+/// Role stored in `users/{uid}.role`: the single source of truth for what a
+/// user can see and do.
 ///
 /// Set once when the profile is created, from the email domain
 /// ([UserRole.forEmail]); the rules only accept that role. After that the
-/// client can never change it; an administrator can (Firestore console or
-/// Admin SDK), and the app follows the stored value.
+/// client can never change it, but an administrator can (Firestore console
+/// or Admin SDK): setting it to `staff` gives the Dashboard and every staff
+/// permission, setting it to `student` gives the student screens and takes
+/// staff permissions away, whatever the email domain. The change applies
+/// immediately, without logging out.
 enum UserRole {
   student('student', 'Student'),
   staff('staff', 'Staff');
@@ -19,9 +23,14 @@ enum UserRole {
   final String value;
   final String label;
 
-  /// Unknown or missing roles are treated as the least privileged one.
+  /// Parses the stored role. Case and surrounding spaces are ignored, so a
+  /// value typed by hand in the console (`"Staff"`, `"staff "`) still works;
+  /// `firestore.rules` normalises it the same way. Unknown or missing roles
+  /// are treated as the least privileged one.
   static UserRole fromValue(Object? value) =>
-      value == UserRole.staff.value ? UserRole.staff : UserRole.student;
+      value is String && value.trim().toLowerCase() == UserRole.staff.value
+      ? UserRole.staff
+      : UserRole.student;
 
   /// Starting role for a new account: staff for [staffEmailDomains]
   /// (`@alueducation.com`), student otherwise (`@alustudent.com`).

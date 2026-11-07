@@ -105,6 +105,13 @@ void main() {
       expect(AppUser.fromMap('u', {}).role, UserRole.student);
     });
 
+    test('role edited by hand ignores case and spaces', () {
+      expect(UserRole.fromValue('Staff'), UserRole.staff);
+      expect(UserRole.fromValue(' staff '), UserRole.staff);
+      expect(UserRole.fromValue('STUDENT'), UserRole.student);
+      expect(UserRole.fromValue(42), UserRole.student);
+    });
+
     test('forEmail gives staff domains the staff role', () {
       expect(UserRole.forEmail('sam@alueducation.com'), UserRole.staff);
       expect(UserRole.forEmail(' Sam@ALUEducation.com '), UserRole.staff);

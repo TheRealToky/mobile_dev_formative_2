@@ -302,6 +302,55 @@ describe('incidents: reporter edits', () => {
   });
 });
 
+// ---------- role edited in the console ----------
+
+describe('role field controls staff permissions', () => {
+  /** Sets a user's role the way an administrator does in the console. */
+  const setRole = (user, role) =>
+    env.withSecurityRulesDisabled((ctx) =>
+      updateDoc(doc(ctx.firestore(), 'users', user.uid), { role }));
+
+  it('a student account set to "staff" gets staff permissions', async () => {
+    await seed();
+    await assertFails(
+      statusBatch(as(STUDENT), STUDENT, 'submitted', 'under_review').commit(),
+    );
+    await assertFails(getDoc(doc(db(as(STUDENT)), 'users', OTHER.uid)));
+
+    await setRole(STUDENT, 'staff');
+    await assertSucceeds(
+      statusBatch(as(STUDENT), STUDENT, 'submitted', 'under_review').commit(),
+    );
+    await assertSucceeds(getDoc(doc(db(as(STUDENT)), 'users', OTHER.uid)));
+  });
+
+  it('a staff account set to "student" loses them', async () => {
+    await seed();
+    await setRole(STAFF, 'student');
+    await assertFails(
+      statusBatch(as(STAFF), STAFF, 'submitted', 'under_review').commit(),
+    );
+    await assertFails(getDoc(doc(db(as(STAFF)), 'users', STUDENT.uid)));
+    await assertFails(deleteDoc(doc(db(as(STAFF)), 'incidents', 'inc1')));
+  });
+
+  it('ignores case and spaces typed in the console', async () => {
+    await seed();
+    await setRole(STUDENT, ' Staff ');
+    await assertSucceeds(
+      statusBatch(as(STUDENT), STUDENT, 'submitted', 'under_review').commit(),
+    );
+  });
+
+  it('treats a missing or non-string role as student', async () => {
+    await seed();
+    await setRole(STAFF, 42);
+    await assertFails(
+      statusBatch(as(STAFF), STAFF, 'submitted', 'under_review').commit(),
+    );
+  });
+});
+
 // ---------- incidents: staff ----------
 
 describe('incidents: staff status updates', () => {

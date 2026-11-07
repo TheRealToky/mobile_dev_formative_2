@@ -97,4 +97,20 @@ void main() {
     expect(find.byType(FeedScreen), findsOneWidget);
     expect(_tabs(tester), ['Feed', 'Report', 'Profile']);
   });
+
+  testWidgets('a staff account set to "student" in the database loses the '
+      'dashboard', (tester) async {
+    final db = await _pumpApp(tester, email: 'sam@alueducation.com');
+    expect(find.byType(StaffDashboardScreen), findsOneWidget);
+
+    await db.doc('users/u1').update({'role': 'student'});
+    await tester.pumpAndSettle();
+    expect(find.byType(FeedScreen), findsOneWidget);
+    expect(_tabs(tester), ['Feed', 'Report', 'Profile']);
+
+    // Typed by hand with different case: still recognised.
+    await db.doc('users/u1').update({'role': 'Staff'});
+    await tester.pumpAndSettle();
+    expect(find.byType(StaffDashboardScreen), findsOneWidget);
+  });
 }

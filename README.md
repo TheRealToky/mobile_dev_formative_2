@@ -143,11 +143,16 @@ flutter run
       it. The profile is created with `role: "staff"` and the app opens on
       the Dashboard. The rules only accept the role that matches the email
       domain, so nobody can sign up as staff with a student email.
-- [ ] **Testing other roles:** the stored role always wins. In the console
-      open Firestore -> `users` -> a user's document and change `role`
-      between `student` and `staff`; the app switches to that role's screens
-      straight away (no log out needed). The client can never change its
-      own role; the rules reject it.
+- [ ] **Testing other roles:** the stored role always wins over the email
+      domain. In the console open Firestore -> `users` -> a user's document
+      and change `role` between `student` and `staff` (case and spaces do
+      not matter). Straight away, with no log out:
+      - `staff`: the app opens the Dashboard (Dashboard, Feed, Profile tabs)
+        and the rules allow every staff action (status changes, deleting
+        any report, seeing who filed an anonymous report);
+      - `student`: the app returns to the Feed (Feed, Report, Profile tabs)
+        and those staff actions are denied again.
+      The client can never change its own role; the rules reject it.
 
 ### 6. Sample data
 
@@ -169,7 +174,7 @@ With coverage (writes `coverage/lcov.info`, git-ignored):
 flutter test --coverage
 ```
 
-Security Rules tests against the local emulator (40 tests). Run once:
+Security Rules tests against the local emulator (44 tests). Run once:
 `npm --prefix firebase install`. Then:
 
 ```bash

@@ -35,12 +35,16 @@ service cloud.firestore {
         ? 'staff' : 'student';
     }
 
-    // Role comes from users/{uid}.role. Clients only choose it at creation,
-    // and only the one their email domain gives them.
+    // Role comes from users/{uid}.role, read on every request, so editing it
+    // in the console grants or removes staff permissions at once, whatever
+    // the email domain. Clients only choose it at creation, and only the
+    // one their email domain gives them. Case and surrounding spaces are
+    // ignored (mirror of UserRole.fromValue); a non-string role is denied.
     function isStaff() {
       return verified()
         && exists(userDoc(request.auth.uid))
-        && get(userDoc(request.auth.uid)).data.role == 'staff';
+        && get(userDoc(request.auth.uid)).data.get('role', '') is string
+        && get(userDoc(request.auth.uid)).data.role.trim().lower() == 'staff';
     }
 
     // ---------- Validation helpers ----------
